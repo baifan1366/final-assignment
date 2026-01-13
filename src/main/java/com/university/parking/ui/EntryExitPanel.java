@@ -284,13 +284,22 @@ public class EntryExitPanel extends JPanel {
 
     private void refreshAvailableSpots() {
         spotsTableModel.setRowCount(0);
-        if (parkingService == null) return;
+        if (parkingService == null) {
+            showError("Parking service is not available.");
+            return;
+        }
         
         VehicleType selectedType = (VehicleType) vehicleTypeComboBox.getSelectedItem();
-        if (selectedType == null) return;
+        if (selectedType == null) {
+            // No vehicle type selected, just clear the table without error
+            return;
+        }
         
         try {
             List<ParkingSpot> availableSpots = parkingService.getAvailableSpots(selectedType);
+            if (availableSpots.isEmpty()) {
+                showWarning("No available spots for " + selectedType + " vehicles.");
+            }
             for (ParkingSpot spot : availableSpots) {
                 Object[] row = {
                     spot.getSpotId(),

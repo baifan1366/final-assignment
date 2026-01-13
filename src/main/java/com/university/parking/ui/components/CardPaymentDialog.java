@@ -309,6 +309,14 @@ public class CardPaymentDialog extends JDialog {
         if (valid) {
             confirmed = true;
             dispose();
+        } else {
+            // Show summary error dialog
+            JOptionPane.showMessageDialog(
+                this,
+                "Please correct the errors in the form before proceeding.",
+                "Validation Error",
+                JOptionPane.ERROR_MESSAGE
+            );
         }
     }
     
