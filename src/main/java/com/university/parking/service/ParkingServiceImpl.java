@@ -154,9 +154,24 @@ public class ParkingServiceImpl implements ParkingService {
         // Update vehicle record
         vehicleDAO.update(vehicle);
         
+        // Calculate duration for receipt
+        LocalDateTime entryTime = vehicle.getEntryTime();
+        long minutes = ChronoUnit.MINUTES.between(entryTime, exitTime);
+        int durationHours = (int) Math.ceil(minutes / 60.0);
+        if (durationHours < 1) durationHours = 1;
+        
+        // Get hourly rate (considering handicapped discount)
+        double hourlyRate;
+        if (vehicle instanceof HandicappedVehicle) {
+            hourlyRate = ((HandicappedVehicle) vehicle).getEffectiveHourlyRate(spot);
+        } else {
+            hourlyRate = spot.getHourlyRate();
+        }
+        
         // Generate receipt (Requirements 4.7, 6.4)
         String receiptId = "R-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        return new Receipt(receiptId, licensePlate, parkingFee, fineAmount, paymentMethod, exitTime);
+        return new Receipt(receiptId, licensePlate, entryTime, exitTime, 
+                          durationHours, hourlyRate, parkingFee, fineAmount, paymentMethod);
     }
     
     @Override

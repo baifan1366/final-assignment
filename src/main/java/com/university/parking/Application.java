@@ -106,6 +106,7 @@ public class Application {
      * Initializes sample parking lot data with floors and spots.
      * Only creates data if the database is empty.
      * Requirements: 1.1, 1.2, 1.3
+     * PDF: 5 floors, Spot ID format "F1-R1-S1" (Floor-Row-Spot)
      */
     private void initializeSampleData() {
         System.out.println("Checking for existing data...");
@@ -116,57 +117,60 @@ public class Application {
             return;
         }
         
-        System.out.println("Creating sample parking lot data...");
+        System.out.println("Creating sample parking lot data (5 floors)...");
         
-        // Create Floor 1 spots (Ground Floor)
-        // Compact: RM2/hour, Regular: RM5/hour, Handicapped: RM2/hour (FREE for handicapped card holder)
-        createSpot("F1-C01", SpotType.COMPACT, 2.0);
-        createSpot("F1-C02", SpotType.COMPACT, 2.0);
-        createSpot("F1-C03", SpotType.COMPACT, 2.0);
-        createSpot("F1-C04", SpotType.COMPACT, 2.0);
-        createSpot("F1-C05", SpotType.COMPACT, 2.0);
+        // Floor 1 (Ground Floor) - Mixed spots
+        // Compact: RM2/hour, Regular: RM5/hour, Handicapped: RM2/hour
+        createSpot("F1-R1-S1", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S2", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S3", SpotType.COMPACT, 2.0);
+        createSpot("F1-R2-S1", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S2", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S3", SpotType.REGULAR, 5.0);
+        createSpot("F1-R3-S1", SpotType.HANDICAPPED, 2.0);
+        createSpot("F1-R3-S2", SpotType.HANDICAPPED, 2.0);
         
-        createSpot("F1-R01", SpotType.REGULAR, 5.0);
-        createSpot("F1-R02", SpotType.REGULAR, 5.0);
-        createSpot("F1-R03", SpotType.REGULAR, 5.0);
-        createSpot("F1-R04", SpotType.REGULAR, 5.0);
-        createSpot("F1-R05", SpotType.REGULAR, 5.0);
+        // Floor 2 - More regular spots
+        createSpot("F2-R1-S1", SpotType.COMPACT, 2.0);
+        createSpot("F2-R1-S2", SpotType.COMPACT, 2.0);
+        createSpot("F2-R2-S1", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S2", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S3", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S4", SpotType.REGULAR, 5.0);
+        createSpot("F2-R3-S1", SpotType.RESERVED, 10.0);
+        createSpot("F2-R3-S2", SpotType.RESERVED, 10.0);
         
-        // Handicapped spots: RM2/hour (FREE if handicapped card holder parks here)
-        createSpot("F1-H01", SpotType.HANDICAPPED, 2.0);
-        createSpot("F1-H02", SpotType.HANDICAPPED, 2.0);
+        // Floor 3 - Mixed spots
+        createSpot("F3-R1-S1", SpotType.COMPACT, 2.0);
+        createSpot("F3-R1-S2", SpotType.COMPACT, 2.0);
+        createSpot("F3-R1-S3", SpotType.COMPACT, 2.0);
+        createSpot("F3-R2-S1", SpotType.REGULAR, 5.0);
+        createSpot("F3-R2-S2", SpotType.REGULAR, 5.0);
+        createSpot("F3-R2-S3", SpotType.REGULAR, 5.0);
+        createSpot("F3-R3-S1", SpotType.HANDICAPPED, 2.0);
         
-        // Create Floor 2 spots
-        // Reserved: RM10/hour
-        createSpot("F2-C01", SpotType.COMPACT, 2.0);
-        createSpot("F2-C02", SpotType.COMPACT, 2.0);
-        createSpot("F2-C03", SpotType.COMPACT, 2.0);
-        createSpot("F2-C04", SpotType.COMPACT, 2.0);
+        // Floor 4 - Regular and Reserved
+        createSpot("F4-R1-S1", SpotType.REGULAR, 5.0);
+        createSpot("F4-R1-S2", SpotType.REGULAR, 5.0);
+        createSpot("F4-R1-S3", SpotType.REGULAR, 5.0);
+        createSpot("F4-R1-S4", SpotType.REGULAR, 5.0);
+        createSpot("F4-R2-S1", SpotType.REGULAR, 5.0);
+        createSpot("F4-R2-S2", SpotType.REGULAR, 5.0);
+        createSpot("F4-R3-S1", SpotType.RESERVED, 10.0);
+        createSpot("F4-R3-S2", SpotType.RESERVED, 10.0);
         
-        createSpot("F2-R01", SpotType.REGULAR, 5.0);
-        createSpot("F2-R02", SpotType.REGULAR, 5.0);
-        createSpot("F2-R03", SpotType.REGULAR, 5.0);
-        createSpot("F2-R04", SpotType.REGULAR, 5.0);
-        createSpot("F2-R05", SpotType.REGULAR, 5.0);
-        createSpot("F2-R06", SpotType.REGULAR, 5.0);
+        // Floor 5 (Top Floor) - VIP, Handicapped, and Electric
+        createSpot("F5-R1-S1", SpotType.COMPACT, 2.0);
+        createSpot("F5-R1-S2", SpotType.COMPACT, 2.0);
+        createSpot("F5-R2-S1", SpotType.REGULAR, 5.0);
+        createSpot("F5-R2-S2", SpotType.REGULAR, 5.0);
+        createSpot("F5-R3-S1", SpotType.HANDICAPPED, 2.0);
+        createSpot("F5-R3-S2", SpotType.RESERVED, 10.0);
+        createSpot("F5-R3-S3", SpotType.RESERVED, 10.0);
         
-        createSpot("F2-V01", SpotType.RESERVED, 10.0);
-        createSpot("F2-V02", SpotType.RESERVED, 10.0);
-        
-        // Create Floor 3 spots (Top Floor)
-        createSpot("F3-C01", SpotType.COMPACT, 2.0);
-        createSpot("F3-C02", SpotType.COMPACT, 2.0);
-        createSpot("F3-C03", SpotType.COMPACT, 2.0);
-        
-        createSpot("F3-R01", SpotType.REGULAR, 5.0);
-        createSpot("F3-R02", SpotType.REGULAR, 5.0);
-        createSpot("F3-R03", SpotType.REGULAR, 5.0);
-        createSpot("F3-R04", SpotType.REGULAR, 5.0);
-        
-        createSpot("F3-H01", SpotType.HANDICAPPED, 2.0);
-        
-        createSpot("F3-V01", SpotType.RESERVED, 10.0);
-        createSpot("F3-V02", SpotType.RESERVED, 10.0);
+        // Electric vehicle charging spots (RM8/hour) - Future-proof feature
+        createSpot("F5-R4-S1", SpotType.ELECTRIC, 8.0);
+        createSpot("F5-R4-S2", SpotType.ELECTRIC, 8.0);
         
         System.out.println("Sample data created successfully.");
         System.out.println("Total spots created: " + parkingSpotDAO.findAll().size());

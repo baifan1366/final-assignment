@@ -4,6 +4,7 @@ package com.university.parking.domain;
  * Factory class for creating Vehicle instances based on VehicleType.
  * Implements the Factory Pattern for vehicle creation.
  * Requirements: 2.1
+ * Future-proof: Adding new vehicle types only requires adding a case here.
  */
 public class VehicleFactory {
 
@@ -32,6 +33,8 @@ public class VehicleFactory {
                 return new SUVTruck(licensePlate);
             case HANDICAPPED:
                 return new HandicappedVehicle(licensePlate);
+            case BUS:
+                return new Bus(licensePlate);
             default:
                 throw new IllegalArgumentException("Unknown vehicle type: " + vehicleType);
         }

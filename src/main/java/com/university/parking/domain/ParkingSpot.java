@@ -48,10 +48,11 @@ public class ParkingSpot {
     /**
      * Checks if this spot can accommodate the given vehicle type.
      * Compatibility matrix:
-     * - MOTORCYCLE: COMPACT, REGULAR
+     * - MOTORCYCLE: COMPACT only
      * - CAR: COMPACT, REGULAR
      * - SUV_TRUCK: REGULAR only
      * - HANDICAPPED: ALL types
+     * - BUS: RESERVED only (large vehicle)
      *
      * @param vehicleType the type of vehicle to check
      * @return true if the spot can accommodate the vehicle type
@@ -63,14 +64,15 @@ public class ParkingSpot {
         
         switch (vehicleType) {
             case MOTORCYCLE:
-                // PDF: Motorcycle can park in Compact spots only
                 return type == SpotType.COMPACT;
             case CAR:
-                return type == SpotType.COMPACT || type == SpotType.REGULAR;
+                return type == SpotType.COMPACT || type == SpotType.REGULAR || type == SpotType.ELECTRIC;
             case SUV_TRUCK:
                 return type == SpotType.REGULAR;
             case HANDICAPPED:
                 return true; // Can park in any spot type
+            case BUS:
+                return type == SpotType.RESERVED; // Large vehicles need reserved spots
             default:
                 return false;
         }

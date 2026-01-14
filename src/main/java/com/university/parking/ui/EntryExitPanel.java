@@ -477,25 +477,39 @@ public class EntryExitPanel extends JPanel {
             String licensePlate = currentExitVehicle.getLicensePlate();
             Receipt receipt = parkingService.processExit(licensePlate, paymentMethod);
             
-            String message = String.format(
-                "Payment Successful!\n\n" +
-                "Receipt ID: %s\n" +
-                "License Plate: %s\n" +
-                "Parking Fee: RM %.2f\n" +
-                "Fines: RM %.2f\n" +
-                "Total Paid: RM %.2f\n" +
-                "Payment Method: %s\n" +
-                "Time: %s",
-                receipt.getReceiptId(),
-                receipt.getLicensePlate(),
-                receipt.getParkingFee(),
-                receipt.getFineAmount(),
-                receipt.getTotalAmount(),
-                receipt.getPaymentMethod(),
-                receipt.getTimestamp().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-            );
+            // Build detailed receipt message
+            StringBuilder message = new StringBuilder();
+            message.append("Payment Successful!\n\n");
+            message.append("═══════════════════════════════\n");
+            message.append("         PARKING RECEIPT\n");
+            message.append("═══════════════════════════════\n\n");
+            message.append(String.format("Receipt ID: %s\n", receipt.getReceiptId()));
+            message.append(String.format("License Plate: %s\n\n", receipt.getLicensePlate()));
             
-            showSuccess("Exit Successful", message);
+            // Time details
+            if (receipt.getEntryTime() != null) {
+                message.append(String.format("Entry Time: %s\n", 
+                    receipt.getEntryTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+            }
+            message.append(String.format("Exit Time: %s\n", 
+                receipt.getTimestamp().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+            message.append(String.format("Duration: %d hour(s)\n\n", receipt.getDurationHours()));
+            
+            // Fee breakdown
+            message.append("───────────────────────────────\n");
+            message.append("Fee Breakdown:\n");
+            message.append(String.format("  %s\n", receipt.getFeeBreakdown()));
+            message.append(String.format("  Parking Fee: RM %.2f\n", receipt.getParkingFee()));
+            if (receipt.getFineAmount() > 0) {
+                message.append(String.format("  Fines: RM %.2f\n", receipt.getFineAmount()));
+            }
+            message.append("───────────────────────────────\n");
+            message.append(String.format("Total Paid: RM %.2f\n", receipt.getTotalAmount()));
+            message.append(String.format("Payment Method: %s\n", receipt.getPaymentMethod()));
+            message.append("\n═══════════════════════════════\n");
+            message.append("      Thank you for parking!\n");
+            
+            showSuccess("Exit Successful", message.toString());
             clearExitInputs();
             refreshAvailableSpots();
             
