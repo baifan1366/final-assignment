@@ -19,6 +19,8 @@ public interface VehicleDAO extends GenericDAO<Vehicle, String> {
      */
     Vehicle findByLicensePlate(String licensePlate);
     
+    Vehicle findActiveByLicensePlate(String licensePlate);
+    
     /**
      * Finds all vehicles currently parked in the parking lot.
      * A vehicle is considered currently parked if it has an entry time but no exit time.

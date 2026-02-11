@@ -57,13 +57,18 @@ public class TicketDAOImpl implements TicketDAO {
     
     @Override
     public void save(Ticket ticket) {
-        String sql = "INSERT INTO ticket (ticket_id, license_plate, spot_id, entry_time) VALUES (?, ?, ?, ?)";
+        Long vehicleId = findVehicleId(ticket.getLicensePlate(), ticket.getEntryTime());
+        if (vehicleId == null) {
+            throw new RuntimeException("Vehicle not found for ticket: " + ticket.getTicketId());
+        }
+        String sql = "INSERT INTO ticket (ticket_id, vehicle_id, license_plate, spot_id, entry_time) VALUES (?, ?, ?, ?, ?)";
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, ticket.getTicketId());
-            stmt.setString(2, ticket.getLicensePlate());
-            stmt.setString(3, ticket.getSpotId());
-            stmt.setString(4, ticket.getEntryTime().format(FORMATTER));
+            stmt.setLong(2, vehicleId);
+            stmt.setString(3, ticket.getLicensePlate());
+            stmt.setString(4, ticket.getSpotId());
+            stmt.setString(5, ticket.getEntryTime().format(FORMATTER));
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error saving ticket: " + ticket.getTicketId(), e);
@@ -72,13 +77,18 @@ public class TicketDAOImpl implements TicketDAO {
     
     @Override
     public void update(Ticket ticket) {
-        String sql = "UPDATE ticket SET license_plate = ?, spot_id = ?, entry_time = ? WHERE ticket_id = ?";
+        Long vehicleId = findVehicleId(ticket.getLicensePlate(), ticket.getEntryTime());
+        if (vehicleId == null) {
+            throw new RuntimeException("Vehicle not found for ticket: " + ticket.getTicketId());
+        }
+        String sql = "UPDATE ticket SET vehicle_id = ?, license_plate = ?, spot_id = ?, entry_time = ? WHERE ticket_id = ?";
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, ticket.getLicensePlate());
-            stmt.setString(2, ticket.getSpotId());
-            stmt.setString(3, ticket.getEntryTime().format(FORMATTER));
-            stmt.setString(4, ticket.getTicketId());
+            stmt.setLong(1, vehicleId);
+            stmt.setString(2, ticket.getLicensePlate());
+            stmt.setString(3, ticket.getSpotId());
+            stmt.setString(4, ticket.getEntryTime().format(FORMATTER));
+            stmt.setString(5, ticket.getTicketId());
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error updating ticket: " + ticket.getTicketId(), e);
@@ -118,8 +128,8 @@ public class TicketDAOImpl implements TicketDAO {
         List<Ticket> tickets = new ArrayList<>();
         // Active tickets are those where the vehicle is still parked (has entry but no exit in vehicle table)
         String sql = "SELECT t.* FROM ticket t " +
-                     "INNER JOIN vehicle v ON t.license_plate = v.license_plate " +
-                     "WHERE v.entry_time IS NOT NULL AND v.exit_time IS NULL";
+                     "INNER JOIN vehicle v ON t.vehicle_id = v.vehicle_id " +
+                     "WHERE v.exit_time IS NULL";
         try (Connection conn = dbManager.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
@@ -130,6 +140,22 @@ public class TicketDAOImpl implements TicketDAO {
             throw new RuntimeException("Error finding active tickets", e);
         }
         return tickets;
+    }
+    
+    private Long findVehicleId(String licensePlate, LocalDateTime entryTime) {
+        String sql = "SELECT vehicle_id FROM vehicle WHERE license_plate = ? AND entry_time = ? ORDER BY entry_time DESC LIMIT 1";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, licensePlate);
+            stmt.setString(2, entryTime != null ? entryTime.format(FORMATTER) : null);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return rs.getLong("vehicle_id");
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding vehicle for ticket: " + licensePlate, e);
+        }
+        return null;
     }
     
     /**

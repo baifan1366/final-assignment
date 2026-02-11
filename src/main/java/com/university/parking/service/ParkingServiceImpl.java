@@ -69,6 +69,11 @@ public class ParkingServiceImpl implements ParkingService {
             throw new IllegalArgumentException("Spot must be selected");
         }
         
+        Vehicle activeVehicle = vehicleDAO.findActiveByLicensePlate(licensePlate);
+        if (activeVehicle != null) {
+            throw new IllegalStateException("Vehicle is already parked: " + licensePlate);
+        }
+        
         // Find and validate the spot (Requirements 3.4)
         ParkingSpot spot = parkingSpotDAO.findById(spotId);
         if (spot == null) {
@@ -109,7 +114,7 @@ public class ParkingServiceImpl implements ParkingService {
         }
         
         // Find the vehicle (Requirements 4.1)
-        Vehicle vehicle = vehicleDAO.findByLicensePlate(licensePlate);
+        Vehicle vehicle = vehicleDAO.findActiveByLicensePlate(licensePlate);
         if (vehicle == null || vehicle.getEntryTime() == null || vehicle.getExitTime() != null) {
             throw new IllegalArgumentException("Vehicle not found in parked vehicles: " + licensePlate);
         }

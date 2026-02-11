@@ -66,13 +66,14 @@ public class VehicleDAOImpl implements VehicleDAO {
     @Override
     public void update(Vehicle vehicle) {
         String sql = "UPDATE vehicle SET vehicle_type = ?, entry_time = ?, exit_time = ? " +
-                     "WHERE license_plate = ?";
+                     "WHERE license_plate = ? AND entry_time = ?";
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, vehicle.getVehicleType().name());
             stmt.setString(2, vehicle.getEntryTime() != null ? vehicle.getEntryTime().format(FORMATTER) : null);
             stmt.setString(3, vehicle.getExitTime() != null ? vehicle.getExitTime().format(FORMATTER) : null);
             stmt.setString(4, vehicle.getLicensePlate());
+            stmt.setString(5, vehicle.getEntryTime() != null ? vehicle.getEntryTime().format(FORMATTER) : null);
             stmt.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException("Error updating vehicle: " + vehicle.getLicensePlate(), e);
@@ -93,7 +94,7 @@ public class VehicleDAOImpl implements VehicleDAO {
     
     @Override
     public Vehicle findByLicensePlate(String licensePlate) {
-        String sql = "SELECT * FROM vehicle WHERE license_plate = ?";
+        String sql = "SELECT * FROM vehicle WHERE license_plate = ? ORDER BY entry_time DESC LIMIT 1";
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, licensePlate);
@@ -103,6 +104,22 @@ public class VehicleDAOImpl implements VehicleDAO {
             }
         } catch (SQLException e) {
             throw new RuntimeException("Error finding vehicle by license plate: " + licensePlate, e);
+        }
+        return null;
+    }
+    
+    @Override
+    public Vehicle findActiveByLicensePlate(String licensePlate) {
+        String sql = "SELECT * FROM vehicle WHERE license_plate = ? AND exit_time IS NULL ORDER BY entry_time DESC LIMIT 1";
+        try (Connection conn = dbManager.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, licensePlate);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return mapResultSetToVehicle(rs);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding active vehicle by license plate: " + licensePlate, e);
         }
         return null;
     }

@@ -144,20 +144,23 @@ public class DatabaseManager {
     
     private static final String CREATE_VEHICLE_TABLE = 
         "CREATE TABLE IF NOT EXISTS vehicle (" +
-        "license_plate TEXT PRIMARY KEY, " +
+        "vehicle_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+        "license_plate TEXT NOT NULL, " +
         "vehicle_type TEXT NOT NULL, " +
-        "entry_time TEXT, " +
+        "entry_time TEXT NOT NULL, " +
         "exit_time TEXT, " +
         "spot_id TEXT, " +
-        "FOREIGN KEY (spot_id) REFERENCES parking_spot(spot_id))";
+        "FOREIGN KEY (spot_id) REFERENCES parking_spot(spot_id), " +
+        "UNIQUE (license_plate, entry_time))";
     
     private static final String CREATE_TICKET_TABLE = 
         "CREATE TABLE IF NOT EXISTS ticket (" +
         "ticket_id TEXT PRIMARY KEY, " +
+        "vehicle_id INTEGER NOT NULL, " +
         "license_plate TEXT NOT NULL, " +
         "spot_id TEXT NOT NULL, " +
         "entry_time TEXT NOT NULL, " +
-        "FOREIGN KEY (license_plate) REFERENCES vehicle(license_plate), " +
+        "FOREIGN KEY (vehicle_id) REFERENCES vehicle(vehicle_id), " +
         "FOREIGN KEY (spot_id) REFERENCES parking_spot(spot_id))";
     
     private static final String CREATE_FINE_TABLE = 
@@ -177,6 +180,5 @@ public class DatabaseManager {
         "payment_time TEXT NOT NULL, " +
         "license_plate TEXT, " +
         "ticket_id TEXT, " +
-        "FOREIGN KEY (license_plate) REFERENCES vehicle(license_plate), " +
         "FOREIGN KEY (ticket_id) REFERENCES ticket(ticket_id))";
 }
