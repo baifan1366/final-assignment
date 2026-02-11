@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class ParkingServiceImpl implements ParkingService {
     
     private static final int OVERSTAY_THRESHOLD_HOURS = 24;
+    private static final double RESERVED_SPOT_VIOLATION_FINE = 100.0;
     
     private final ParkingSpotDAO parkingSpotDAO;
     private final VehicleDAO vehicleDAO;
@@ -286,25 +287,28 @@ public class ParkingServiceImpl implements ParkingService {
         // Check for overstay (more than 24 hours)
         if (totalHours > OVERSTAY_THRESHOLD_HOURS) {
             int overstayHours = (int) (totalHours - OVERSTAY_THRESHOLD_HOURS);
-            double fineAmount = 50.0; // Default fixed fine
             
-            // Use FineService to calculate if available
+            // Use FineService to calculate fine amount
             if (fineService != null) {
-                fineAmount = fineService.calculateFine(overstayHours);
+                double fineAmount = fineService.calculateFine(overstayHours);
+                Fine overstayFine = new Fine(licensePlate, fineAmount, 
+                    "Overstay violation - exceeded 24 hours by " + overstayHours + " hours");
+                fineDAO.save(overstayFine);
+            } else {
+                throw new IllegalStateException("FineService is not configured. Cannot calculate overstay fine.");
             }
-            
-            Fine overstayFine = new Fine(licensePlate, fineAmount, 
-                "Overstay violation - exceeded 24 hours by " + overstayHours + " hours");
-            fineDAO.save(overstayFine);
         }
         
         // Check for Reserved spot violation (non-VIP parking in Reserved)
         if (spot.getType() == SpotType.RESERVED) {
             // Non-handicapped vehicles in Reserved spots without reservation get fined
             if (vehicle.getVehicleType() != VehicleType.HANDICAPPED) {
-                Fine reservedFine = new Fine(licensePlate, 100.0, 
-                    "Reserved spot violation - no reservation");
-                fineDAO.save(reservedFine);
+                if (fineService != null) {
+                    // Use a fixed fine for reserved spot violation (not time-based)
+                    Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
+                        "Reserved spot violation - no reservation");
+                    fineDAO.save(reservedFine);
+                }
             }
         }
     }

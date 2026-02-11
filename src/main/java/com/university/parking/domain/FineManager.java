@@ -14,10 +14,10 @@ public class FineManager {
     private final List<Fine> fines;
     
     /**
-     * Creates a FineManager with a default FixedFineStrategy.
+     * Creates a FineManager with a default HourlyFineStrategy.
      */
     public FineManager() {
-        this.currentStrategy = new FixedFineStrategy(10.0, 100.0);
+        this.currentStrategy = new HourlyFineStrategy();
         this.fines = new ArrayList<>();
     }
     

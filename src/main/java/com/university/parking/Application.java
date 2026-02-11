@@ -288,8 +288,8 @@ public class Application {
             parkingSpotDAO, vehicleDAO, ticketDAO, fineDAO, paymentDAO);
         
         fineService = new FineServiceImpl(fineDAO);
-        // Set default fine strategy (Fixed: RM50)
-        fineService.setFineStrategy(new FixedFineStrategy());
+        // Set default fine strategy (Hourly: RM20 per hour for overstaying)
+        fineService.setFineStrategy(new HourlyFineStrategy());
         
         // Wire FineService to ParkingService for fine calculation
         parkingServiceImpl.setFineService(fineService);
