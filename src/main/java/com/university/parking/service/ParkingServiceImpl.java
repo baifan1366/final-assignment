@@ -238,7 +238,7 @@ public class ParkingServiceImpl implements ParkingService {
         if (licensePlate == null || licensePlate.trim().isEmpty()) {
             return null;
         }
-        return vehicleDAO.findByLicensePlate(licensePlate);
+        return vehicleDAO.findActiveByLicensePlate(licensePlate);
     }
     
     @Override
