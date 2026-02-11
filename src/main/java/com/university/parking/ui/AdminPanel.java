@@ -39,6 +39,8 @@ public class AdminPanel extends JPanel {
     private StatCard availableSpotsCard;
     private StatCard occupiedSpotsCard;
     private StatCard occupancyRateCard;
+    private StatCard todayRevenueCard;
+    private StatCard unpaidFinesCard;
     
     public AdminPanel() {
         initializePanel();
@@ -68,18 +70,22 @@ public class AdminPanel extends JPanel {
     }
     
     private JPanel createStatisticsPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 4, UIConstants.SPACING_MD, 0));
+        JPanel panel = new JPanel(new GridLayout(2, 3, UIConstants.SPACING_MD, UIConstants.SPACING_MD));
         panel.setOpaque(false);
         
         totalSpotsCard = new StatCard("Total Spots", "0", UIConstants.PRIMARY);
         availableSpotsCard = new StatCard("Available", "0", UIConstants.SUCCESS);
         occupiedSpotsCard = new StatCard("Occupied", "0", UIConstants.WARNING);
         occupancyRateCard = new StatCard("Occupancy Rate", "0%", UIConstants.INFO);
+        todayRevenueCard = new StatCard("Today's Revenue", "RM 0.00", UIConstants.SUCCESS);
+        unpaidFinesCard = new StatCard("Unpaid Fines", "RM 0.00", UIConstants.DANGER);
         
         panel.add(totalSpotsCard);
         panel.add(availableSpotsCard);
         panel.add(occupiedSpotsCard);
         panel.add(occupancyRateCard);
+        panel.add(todayRevenueCard);
+        panel.add(unpaidFinesCard);
         
         return panel;
     }
@@ -245,6 +251,26 @@ public class AdminPanel extends JPanel {
         availableSpotsCard.setValue(String.valueOf(availableSpots));
         occupiedSpotsCard.setValue(String.valueOf(occupiedSpots));
         occupancyRateCard.setValue(String.format("%.1f%%", occupancyRate * 100));
+        
+        // Update revenue card
+        try {
+            java.time.LocalDate today = java.time.LocalDate.now();
+            double todayRevenue = reportService.getTotalRevenue(today, today);
+            todayRevenueCard.setValue(String.format("RM %.2f", todayRevenue));
+        } catch (Exception e) {
+            todayRevenueCard.setValue("RM 0.00");
+        }
+        
+        // Update unpaid fines card
+        try {
+            List<Fine> unpaidFines = reportService.getOutstandingFines();
+            double totalUnpaid = unpaidFines.stream()
+                    .mapToDouble(Fine::getAmount)
+                    .sum();
+            unpaidFinesCard.setValue(String.format("RM %.2f", totalUnpaid));
+        } catch (Exception e) {
+            unpaidFinesCard.setValue("RM 0.00");
+        }
     }
     
     private void updateCurrentStrategyLabel() {
@@ -357,6 +383,14 @@ public class AdminPanel extends JPanel {
     
     public JLabel getCurrentStrategyLabel() {
         return currentStrategyLabel;
+    }
+    
+    public StatCard getTodayRevenueCard() {
+        return todayRevenueCard;
+    }
+    
+    public StatCard getUnpaidFinesCard() {
+        return unpaidFinesCard;
     }
     
     public void setFineService(FineService fineService) {

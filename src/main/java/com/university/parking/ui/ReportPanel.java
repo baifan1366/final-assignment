@@ -361,6 +361,11 @@ public class ReportPanel extends JPanel {
                         reservedTotal++;
                         if (!spot.isAvailable()) reservedOccupied++;
                         break;
+                    case ELECTRIC:
+                        // Future-proof: Electric spots counted as regular for now
+                        regularTotal++;
+                        if (!spot.isAvailable()) regularOccupied++;
+                        break;
                 }
             }
             
