@@ -66,7 +66,7 @@ public class ParkingSpot {
             case MOTORCYCLE:
                 return type == SpotType.COMPACT;
             case CAR:
-                return type == SpotType.COMPACT || type == SpotType.REGULAR || type == SpotType.ELECTRIC;
+                return type == SpotType.COMPACT || type == SpotType.RESERVED || type == SpotType.REGULAR || type == SpotType.ELECTRIC;
             case SUV_TRUCK:
                 return type == SpotType.REGULAR;
             case HANDICAPPED:

@@ -2,7 +2,9 @@ package com.university.parking.domain;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -14,6 +16,7 @@ public class Floor {
     private final String floorId;
     private final int floorNumber;
     private final List<ParkingSpot> spots;
+    private final Map<Integer, List<ParkingSpot>> rows;
 
     /**
      * Creates a new Floor with the specified properties.
@@ -28,19 +31,48 @@ public class Floor {
         this.floorId = floorId;
         this.floorNumber = floorNumber;
         this.spots = new ArrayList<>();
+        this.rows = new HashMap<>();
     }
 
     /**
-     * Adds a parking spot to this floor.
+     * Adds a parking spot to this floor and organizes it by row.
+     * Extracts row number from spot ID format "F{floor}-R{row}-S{spot}"
      *
      * @param spot the parking spot to add
-     * @throws IllegalArgumentException if spot is null
+     * @throws IllegalArgumentException if spot is null or invalid format
      */
     public void addSpot(ParkingSpot spot) {
         if (spot == null) {
             throw new IllegalArgumentException("Parking spot cannot be null");
         }
+        
+        // Extract row number from spot ID (format: F{floor}-R{row}-S{spot})
+        String spotId = spot.getSpotId();
+        int rowNumber = extractRowNumberFromSpotId(spotId);
+        
         spots.add(spot);
+        
+        // Organize by row
+        rows.computeIfAbsent(rowNumber, k -> new ArrayList<>()).add(spot);
+    }
+    
+    /**
+     * Extracts row number from spot ID format "F{floor}-R{row}-S{spot}"
+     * @param spotId the spot ID in format F1-R1-S1
+     * @return the row number
+     * @throws IllegalArgumentException if spot ID format is invalid
+     */
+    private int extractRowNumberFromSpotId(String spotId) {
+        try {
+            // Format: F1-R1-S1
+            String[] parts = spotId.split("-");
+            if (parts.length >= 2 && parts[1].startsWith("R")) {
+                return Integer.parseInt(parts[1].substring(1));
+            }
+            throw new IllegalArgumentException("Invalid spot ID format: " + spotId);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Invalid spot ID format: " + spotId, e);
+        }
     }
 
     /**

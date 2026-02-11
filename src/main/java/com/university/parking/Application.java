@@ -8,6 +8,7 @@ import com.university.parking.ui.*;
 
 import javax.swing.*;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * Main application entry point for the University Parking Lot Management System.
@@ -117,60 +118,142 @@ public class Application {
             return;
         }
         
+        System.out.println("Clearing existing parking spot data...");
+        clearAllSpots();
+        
         System.out.println("Creating sample parking lot data (5 floors)...");
         
-        // Floor 1 (Ground Floor) - Mixed spots
-        // Compact: RM2/hour, Regular: RM5/hour, Handicapped: RM2/hour
+        // Standard 5-floor parking structure with consistent row and spot numbering
+        
+        // Floor 1 (Ground Floor) - 3 rows, 8 spots per row = 24 spots
+        // Row 1: Compact vehicles
         createSpot("F1-R1-S1", SpotType.COMPACT, 2.0);
         createSpot("F1-R1-S2", SpotType.COMPACT, 2.0);
         createSpot("F1-R1-S3", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S4", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S5", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S6", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S7", SpotType.COMPACT, 2.0);
+        createSpot("F1-R1-S8", SpotType.COMPACT, 2.0);
+        
+        // Row 2: Regular vehicles
         createSpot("F1-R2-S1", SpotType.REGULAR, 5.0);
         createSpot("F1-R2-S2", SpotType.REGULAR, 5.0);
         createSpot("F1-R2-S3", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S4", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S5", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S6", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S7", SpotType.REGULAR, 5.0);
+        createSpot("F1-R2-S8", SpotType.REGULAR, 5.0);
+        
+        // Row 3: Handicapped and Regular mix
         createSpot("F1-R3-S1", SpotType.HANDICAPPED, 2.0);
         createSpot("F1-R3-S2", SpotType.HANDICAPPED, 2.0);
+        createSpot("F1-R3-S3", SpotType.HANDICAPPED, 2.0);
+        createSpot("F1-R3-S4", SpotType.HANDICAPPED, 2.0);
+        createSpot("F1-R3-S5", SpotType.REGULAR, 5.0);
+        createSpot("F1-R3-S6", SpotType.REGULAR, 5.0);
+        createSpot("F1-R3-S7", SpotType.REGULAR, 5.0);
+        createSpot("F1-R3-S8", SpotType.REGULAR, 5.0);
         
-        // Floor 2 - More regular spots
+        // Floor 2 - 3 rows, 10 spots per row = 30 spots
+        // Row 1: Compact and Regular mix
         createSpot("F2-R1-S1", SpotType.COMPACT, 2.0);
         createSpot("F2-R1-S2", SpotType.COMPACT, 2.0);
+        createSpot("F2-R1-S3", SpotType.COMPACT, 2.0);
+        createSpot("F2-R1-S4", SpotType.COMPACT, 2.0);
+        createSpot("F2-R1-S5", SpotType.REGULAR, 5.0);
+        createSpot("F2-R1-S6", SpotType.REGULAR, 5.0);
+        createSpot("F2-R1-S7", SpotType.REGULAR, 5.0);
+        createSpot("F2-R1-S8", SpotType.REGULAR, 5.0);
+        createSpot("F2-R1-S9", SpotType.REGULAR, 5.0);
+        createSpot("F2-R1-S10", SpotType.REGULAR, 5.0);
+        
+        // Row 2: Regular vehicles
         createSpot("F2-R2-S1", SpotType.REGULAR, 5.0);
         createSpot("F2-R2-S2", SpotType.REGULAR, 5.0);
         createSpot("F2-R2-S3", SpotType.REGULAR, 5.0);
         createSpot("F2-R2-S4", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S5", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S6", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S7", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S8", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S9", SpotType.REGULAR, 5.0);
+        createSpot("F2-R2-S10", SpotType.REGULAR, 5.0);
+        
+        // Row 3: Reserved spots
         createSpot("F2-R3-S1", SpotType.RESERVED, 10.0);
         createSpot("F2-R3-S2", SpotType.RESERVED, 10.0);
+        createSpot("F2-R3-S3", SpotType.RESERVED, 10.0);
+        createSpot("F2-R3-S4", SpotType.RESERVED, 10.0);
+        createSpot("F2-R3-S5", SpotType.RESERVED, 10.0);
+        createSpot("F2-R3-S6", SpotType.RESERVED, 10.0);
+        createSpot("F2-R3-S7", SpotType.REGULAR, 5.0);
+        createSpot("F2-R3-S8", SpotType.REGULAR, 5.0);
+        createSpot("F2-R3-S9", SpotType.REGULAR, 5.0);
+        createSpot("F2-R3-S10", SpotType.REGULAR, 5.0);
         
-        // Floor 3 - Mixed spots
-        createSpot("F3-R1-S1", SpotType.COMPACT, 2.0);
-        createSpot("F3-R1-S2", SpotType.COMPACT, 2.0);
-        createSpot("F3-R1-S3", SpotType.COMPACT, 2.0);
-        createSpot("F3-R2-S1", SpotType.REGULAR, 5.0);
-        createSpot("F3-R2-S2", SpotType.REGULAR, 5.0);
-        createSpot("F3-R2-S3", SpotType.REGULAR, 5.0);
-        createSpot("F3-R3-S1", SpotType.HANDICAPPED, 2.0);
+        // Floor 3 - 4 rows, 8 spots per row = 32 spots
+        // Row 1: Compact vehicles
+        for (int i = 1; i <= 8; i++) {
+            createSpot("F3-R1-S" + i, SpotType.COMPACT, 2.0);
+        }
         
-        // Floor 4 - Regular and Reserved
-        createSpot("F4-R1-S1", SpotType.REGULAR, 5.0);
-        createSpot("F4-R1-S2", SpotType.REGULAR, 5.0);
-        createSpot("F4-R1-S3", SpotType.REGULAR, 5.0);
-        createSpot("F4-R1-S4", SpotType.REGULAR, 5.0);
-        createSpot("F4-R2-S1", SpotType.REGULAR, 5.0);
-        createSpot("F4-R2-S2", SpotType.REGULAR, 5.0);
-        createSpot("F4-R3-S1", SpotType.RESERVED, 10.0);
-        createSpot("F4-R3-S2", SpotType.RESERVED, 10.0);
+        // Row 2: Regular vehicles
+        for (int i = 1; i <= 8; i++) {
+            createSpot("F3-R2-S" + i, SpotType.REGULAR, 5.0);
+        }
         
-        // Floor 5 (Top Floor) - VIP, Handicapped, and Electric
-        createSpot("F5-R1-S1", SpotType.COMPACT, 2.0);
-        createSpot("F5-R1-S2", SpotType.COMPACT, 2.0);
-        createSpot("F5-R2-S1", SpotType.REGULAR, 5.0);
-        createSpot("F5-R2-S2", SpotType.REGULAR, 5.0);
-        createSpot("F5-R3-S1", SpotType.HANDICAPPED, 2.0);
-        createSpot("F5-R3-S2", SpotType.RESERVED, 10.0);
-        createSpot("F5-R3-S3", SpotType.RESERVED, 10.0);
+        // Row 3: Regular vehicles
+        for (int i = 1; i <= 8; i++) {
+            createSpot("F3-R3-S" + i, SpotType.REGULAR, 5.0);
+        }
         
-        // Electric vehicle charging spots (RM8/hour) - Future-proof feature
-        createSpot("F5-R4-S1", SpotType.ELECTRIC, 8.0);
-        createSpot("F5-R4-S2", SpotType.ELECTRIC, 8.0);
+        // Row 4: Handicapped spots
+        for (int i = 1; i <= 8; i++) {
+            createSpot("F3-R4-S" + i, SpotType.HANDICAPPED, 2.0);
+        }
+        
+        // Floor 4 - 3 rows, 12 spots per row = 36 spots
+        // Row 1: Regular vehicles
+        for (int i = 1; i <= 12; i++) {
+            createSpot("F4-R1-S" + i, SpotType.REGULAR, 5.0);
+        }
+        
+        // Row 2: Regular vehicles
+        for (int i = 1; i <= 12; i++) {
+            createSpot("F4-R2-S" + i, SpotType.REGULAR, 5.0);
+        }
+        
+        // Row 3: Reserved spots
+        for (int i = 1; i <= 12; i++) {
+            if (i <= 4) {
+                createSpot("F4-R3-S" + i, SpotType.RESERVED, 10.0);
+            } else {
+                createSpot("F4-R3-S" + i, SpotType.REGULAR, 5.0);
+            }
+        }
+        
+        // Floor 5 (Top Floor) - 2 rows, 15 spots per row = 30 spots
+        // Row 1: Mixed spots
+        for (int i = 1; i <= 15; i++) {
+            if (i <= 5) {
+                createSpot("F5-R1-S" + i, SpotType.COMPACT, 2.0);
+            } else if (i <= 10) {
+                createSpot("F5-R1-S" + i, SpotType.REGULAR, 5.0);
+            } else {
+                createSpot("F5-R1-S" + i, SpotType.HANDICAPPED, 2.0);
+            }
+        }
+        
+        // Row 2: Reserved and Regular mix
+        for (int i = 1; i <= 15; i++) {
+            if (i <= 6) {
+                createSpot("F5-R2-S" + i, SpotType.RESERVED, 10.0);
+            } else {
+                createSpot("F5-R2-S" + i, SpotType.REGULAR, 5.0);
+            }
+        }
         
         System.out.println("Sample data created successfully.");
         System.out.println("Total spots created: " + parkingSpotDAO.findAll().size());
@@ -182,6 +265,16 @@ public class Application {
     private void createSpot(String spotId, SpotType type, double hourlyRate) {
         ParkingSpot spot = new ParkingSpot(spotId, type, hourlyRate);
         parkingSpotDAO.save(spot);
+    }
+
+    /**
+     * Helper method to clear all parking spots from the database.
+     */
+    private void clearAllSpots() {
+        List<ParkingSpot> allSpots = parkingSpotDAO.findAll();
+        for (ParkingSpot spot : allSpots) {
+            parkingSpotDAO.delete(spot.getSpotId());
+        }
     }
 
     /**
