@@ -40,6 +40,7 @@ public class EntryExitPanel extends JPanel {
     private JLabel parkingFeeLabel;
     private JLabel finesLabel;
     private JLabel totalLabel;
+    private JCheckBox payFinesCheckBox;
     private StyledComboBox<PaymentMethod> paymentMethodComboBox;
     private StyledButton payExitButton;
     
@@ -224,8 +225,17 @@ public class EntryExitPanel extends JPanel {
         finesLabel.setForeground(UIConstants.DANGER);
         summaryPanel.add(finesLabel, gbc);
         
-        // Separator
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, 0);
+        payFinesCheckBox = createStyledCheckBox("Pay fines now");
+        payFinesCheckBox.setSelected(true);
+        payFinesCheckBox.setEnabled(false);
+        payFinesCheckBox.addActionListener(e -> updateExitTotals());
+        summaryPanel.add(payFinesCheckBox, gbc);
+        
+        // Separator
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(UIConstants.SPACING_MD, 0, UIConstants.SPACING_MD, 0);
         JSeparator sep = new JSeparator();
@@ -233,7 +243,7 @@ public class EntryExitPanel extends JPanel {
         summaryPanel.add(sep, gbc);
         
         // Total
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
         gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, UIConstants.SPACING_LG);
         JLabel totalText = createSummaryLabel("Total Amount");
         totalText.setFont(UIConstants.TITLE_SMALL);
@@ -245,7 +255,7 @@ public class EntryExitPanel extends JPanel {
         summaryPanel.add(totalLabel, gbc);
         
         // Payment method
-        gbc.gridx = 0; gbc.gridy = 5;
+        gbc.gridx = 0; gbc.gridy = 6;
         summaryPanel.add(createSummaryLabel("Payment Method"), gbc);
         gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
         paymentMethodComboBox = new StyledComboBox<>(PaymentMethod.values());
@@ -280,6 +290,22 @@ public class EntryExitPanel extends JPanel {
         label.setFont(UIConstants.BODY_BOLD);
         label.setForeground(UIConstants.TEXT_PRIMARY);
         return label;
+    }
+    
+    private JCheckBox createStyledCheckBox(String text) {
+        JCheckBox checkBox = new JCheckBox(text);
+        checkBox.setFont(UIConstants.BODY);
+        checkBox.setForeground(UIConstants.TEXT_PRIMARY);
+        checkBox.setBackground(UIConstants.BG_MAIN);
+        checkBox.setOpaque(false);
+        checkBox.setFocusPainted(false);
+        checkBox.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        return checkBox;
+    }
+    
+    private void updateExitTotals() {
+        double fineToPay = payFinesCheckBox != null && payFinesCheckBox.isSelected() ? currentFineAmount : 0.0;
+        totalLabel.setText(String.format("RM %.2f", currentParkingFee + fineToPay));
     }
 
     private void refreshAvailableSpots() {
@@ -429,10 +455,13 @@ public class EntryExitPanel extends JPanel {
                 currentFineAmount = fineService.getTotalUnpaidAmount(licensePlate);
             }
             
+            payFinesCheckBox.setEnabled(currentFineAmount > 0);
+            payFinesCheckBox.setSelected(currentFineAmount > 0);
+            
             hoursLabel.setText(hours + " hour(s)");
             parkingFeeLabel.setText(String.format("RM %.2f", currentParkingFee));
             finesLabel.setText(String.format("RM %.2f", currentFineAmount));
-            totalLabel.setText(String.format("RM %.2f", currentParkingFee + currentFineAmount));
+            updateExitTotals();
             
             payExitButton.setEnabled(true);
             
@@ -459,9 +488,11 @@ public class EntryExitPanel extends JPanel {
             return;
         }
         
+        boolean payFines = payFinesCheckBox != null && payFinesCheckBox.isSelected();
+        
         // Show card payment dialog if CARD is selected
         if (paymentMethod == PaymentMethod.CARD) {
-            double totalAmount = currentParkingFee + currentFineAmount;
+            double totalAmount = currentParkingFee + (payFines ? currentFineAmount : 0.0);
             CardPaymentDialog cardDialog = new CardPaymentDialog(
                 (Frame) SwingUtilities.getWindowAncestor(this), 
                 totalAmount
@@ -475,7 +506,7 @@ public class EntryExitPanel extends JPanel {
         
         try {
             String licensePlate = currentExitVehicle.getLicensePlate();
-            Receipt receipt = parkingService.processExit(licensePlate, paymentMethod);
+            Receipt receipt = parkingService.processExit(licensePlate, paymentMethod, payFines);
             
             // Build detailed receipt message
             StringBuilder message = new StringBuilder();
@@ -536,7 +567,12 @@ public class EntryExitPanel extends JPanel {
         currentExitSpot = null;
         currentParkingFee = 0.0;
         currentFineAmount = 0.0;
-        
+
+        if (payFinesCheckBox != null) {
+            payFinesCheckBox.setSelected(true);
+            payFinesCheckBox.setEnabled(false);
+        }
+
         hoursLabel.setText("-");
         parkingFeeLabel.setText("RM 0.00");
         finesLabel.setText("RM 0.00");

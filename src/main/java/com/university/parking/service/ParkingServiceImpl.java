@@ -107,7 +107,7 @@ public class ParkingServiceImpl implements ParkingService {
     }
     
     @Override
-    public Receipt processExit(String licensePlate, PaymentMethod paymentMethod) {
+    public Receipt processExit(String licensePlate, PaymentMethod paymentMethod, boolean payFines) {
         // Validate input (Requirements 4.8)
         if (licensePlate == null || licensePlate.trim().isEmpty()) {
             throw new IllegalArgumentException("License plate cannot be empty");
@@ -137,9 +137,10 @@ public class ParkingServiceImpl implements ParkingService {
         
         // Get unpaid fines (Requirements 4.4)
         double fineAmount = fineDAO.sumUnpaidByLicensePlate(licensePlate);
+        double fineAmountToPay = payFines ? fineAmount : 0.0;
         
         // Calculate total amount
-        double totalAmount = parkingFee + fineAmount;
+        double totalAmount = parkingFee + fineAmountToPay;
         
         // Process payment
         Ticket ticket = ticketDAO.findByLicensePlate(licensePlate);
@@ -147,10 +148,11 @@ public class ParkingServiceImpl implements ParkingService {
         Payment payment = new Payment(totalAmount, paymentMethod, licensePlate, ticketId);
         paymentDAO.save(payment);
         
-        // Mark fines as paid
-        List<Fine> unpaidFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
-        for (Fine fine : unpaidFines) {
-            fineDAO.markAsPaid(fine.getFineId());
+        if (payFines) {
+            List<Fine> unpaidFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
+            for (Fine fine : unpaidFines) {
+                fineDAO.markAsPaid(fine.getFineId());
+            }
         }
         
         // Release the spot (Requirements 4.6)
@@ -177,7 +179,7 @@ public class ParkingServiceImpl implements ParkingService {
         // Generate receipt (Requirements 4.7, 6.4)
         String receiptId = "R-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         return new Receipt(receiptId, licensePlate, entryTime, exitTime, 
-                          durationHours, hourlyRate, parkingFee, fineAmount, paymentMethod);
+                          durationHours, hourlyRate, parkingFee, fineAmountToPay, paymentMethod);
     }
     
     @Override

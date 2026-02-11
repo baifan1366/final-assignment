@@ -36,10 +36,11 @@ public interface ParkingService {
      * 
      * @param licensePlate the vehicle's license plate
      * @param paymentMethod the payment method used
+     * @param payFines whether to pay outstanding fines during this exit
      * @return the generated receipt
      * @throws IllegalArgumentException if license plate is not found
      */
-    Receipt processExit(String licensePlate, PaymentMethod paymentMethod);
+    Receipt processExit(String licensePlate, PaymentMethod paymentMethod, boolean payFines);
     
     /**
      * Calculates the parking fee for a vehicle.
