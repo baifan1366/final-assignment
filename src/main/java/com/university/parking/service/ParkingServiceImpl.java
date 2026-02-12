@@ -25,6 +25,7 @@ public class ParkingServiceImpl implements ParkingService {
     private final FineDAO fineDAO;
     private final PaymentDAO paymentDAO;
     private FineService fineService;
+    private ReservationService reservationService;
     
     public ParkingServiceImpl(ParkingSpotDAO parkingSpotDAO, VehicleDAO vehicleDAO, 
                               TicketDAO ticketDAO, FineDAO fineDAO, PaymentDAO paymentDAO) {
@@ -41,6 +42,14 @@ public class ParkingServiceImpl implements ParkingService {
      */
     public void setFineService(FineService fineService) {
         this.fineService = fineService;
+    }
+    
+    /**
+     * Sets the reservation service for reservation validation.
+     * @param reservationService the reservation service
+     */
+    public void setReservationService(ReservationService reservationService) {
+        this.reservationService = reservationService;
     }
     
     @Override
@@ -306,11 +315,15 @@ public class ParkingServiceImpl implements ParkingService {
             }
         }
         
-        // Check for Reserved spot violation (non-VIP parking in Reserved)
+        // Check for Reserved spot violation (non-VIP parking in Reserved without valid reservation)
         if (spot.getType() == SpotType.RESERVED) {
             // Non-handicapped vehicles in Reserved spots without reservation get fined
             if (vehicle.getVehicleType() != VehicleType.HANDICAPPED) {
-                if (fineService != null) {
+                // Check if vehicle has a valid reservation for this spot
+                boolean hasReservation = reservationService != null 
+                    && reservationService.hasValidReservation(licensePlate, spot.getSpotId());
+                
+                if (!hasReservation && fineService != null) {
                     // Use a fixed fine for reserved spot violation (not time-based)
                     Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
                         "Reserved spot violation - no reservation");

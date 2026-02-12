@@ -23,11 +23,13 @@ public class Application {
     private TicketDAO ticketDAO;
     private FineDAO fineDAO;
     private PaymentDAO paymentDAO;
+    private ReservationDAO reservationDAO;
     
     private ParkingService parkingService;
     private FineService fineService;
     private PaymentService paymentService;
     private ReportService reportService;
+    private ReservationService reservationService;
     
     /**
      * Main entry point for the application.
@@ -100,6 +102,7 @@ public class Application {
         ticketDAO = new TicketDAOImpl(dbManager);
         fineDAO = new FineDAOImpl(dbManager);
         paymentDAO = new PaymentDAOImpl(dbManager);
+        reservationDAO = new ReservationDAOImpl(dbManager);
         System.out.println("DAOs initialized successfully.");
     }
     
@@ -291,8 +294,12 @@ public class Application {
         // Set default fine strategy (Hourly: RM20 per hour for overstaying)
         fineService.setFineStrategy(new HourlyFineStrategy());
         
-        // Wire FineService to ParkingService for fine calculation
+        // Initialize ReservationService
+        reservationService = new ReservationServiceImpl(reservationDAO);
+        
+        // Wire FineService and ReservationService to ParkingService
         parkingServiceImpl.setFineService(fineService);
+        parkingServiceImpl.setReservationService(reservationService);
         parkingService = parkingServiceImpl;
         
         paymentService = new PaymentServiceImpl(paymentDAO);
