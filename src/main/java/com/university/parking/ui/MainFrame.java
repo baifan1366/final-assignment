@@ -1,5 +1,6 @@
 package com.university.parking.ui;
 
+import com.university.parking.ui.components.PasswordDialog;
 import com.university.parking.ui.components.RoundedPanel;
 
 import javax.swing.*;
@@ -216,6 +217,14 @@ public class MainFrame extends JFrame {
     }
     
     private void switchPanel(String panelName, NavButton navButton) {
+        // Check if admin authentication is required
+        if ("admin".equals(panelName) || "reports".equals(panelName)) {
+            if (!authenticateAdmin()) {
+                // Authentication failed - stay on current panel
+                return;
+            }
+        }
+        
         cardLayout.show(contentPanel, panelName);
         setActiveNav(navButton);
         
@@ -238,6 +247,16 @@ public class MainFrame extends JFrame {
                 break;
             }
         }
+    }
+    
+    /**
+     * Shows password dialog for admin authentication.
+     * 
+     * @return true if authentication successful, false otherwise
+     */
+    private boolean authenticateAdmin() {
+        PasswordDialog dialog = new PasswordDialog(this);
+        return dialog.showDialog();
     }
     
     private void setActiveNav(NavButton navButton) {
