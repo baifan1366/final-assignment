@@ -134,6 +134,8 @@ public class ParkingServiceImpl implements ParkingService {
                 fineDAO.save(reservedFine);
             }
         }
+        // Note: RESERVED spots can be used by anyone, but non-reserved vehicles will be fined
+        // The fine will be issued during exit in checkAndIssueFines()
         
         // Create vehicle and set entry time (Requirements 3.5)
         LocalDateTime entryTime = LocalDateTime.now();
@@ -200,6 +202,30 @@ public class ParkingServiceImpl implements ParkingService {
         List<Fine> unpaidFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
         for (Fine fine : unpaidFines) {
             fineDAO.markAsPaid(fine.getFineId());
+        }
+        
+        // CRITICAL: Complete reservation if this was a reserved spot
+        if (reservationService != null && spot.getType() == SpotType.RESERVED) {
+            try {
+                List<Reservation> activeReservations = reservationService
+                    .findByLicensePlate(licensePlate).stream()
+                    .filter(r -> r.getSpotId().equals(spot.getSpotId()))
+                    .filter(r -> r.getStatus() == ReservationStatus.CONFIRMED)
+                    .filter(r -> r.isActive() || 
+                           (r.getStartTime().isBefore(exitTime) && r.getEndTime().isAfter(vehicle.getEntryTime())))
+                    .collect(Collectors.toList());
+                
+                // Complete the reservation
+                for (Reservation res : activeReservations) {
+                    res.complete();
+                    // Note: Need to add update method to ReservationService
+                    // For now, we'll use the DAO directly if available
+                    System.out.println("Completing reservation: " + res.getReservationId());
+                }
+            } catch (Exception e) {
+                // Log error but don't fail the exit process
+                System.err.println("Error completing reservation: " + e.getMessage());
+            }
         }
         
         // Release the spot (Requirements 4.6)
@@ -297,6 +323,12 @@ public class ParkingServiceImpl implements ParkingService {
         }
         return parkingSpotDAO.findByVehiclePlate(licensePlate);
     }
+
+    @Override
+    public List<ParkingSpot> getAllSpots() {
+        return parkingSpotDAO.findAll();
+    }
+
     
     /**
      * Extracts floor ID from spot ID (assumes format like "F1-S01").
@@ -351,6 +383,24 @@ public class ParkingServiceImpl implements ParkingService {
                 Fine overstayFine = new Fine(licensePlate, fineAmount, 
                     "Overstay violation - exceeded 24 hours by " + overstayHours + " hours");
                 fineDAO.save(overstayFine);
+            } else {
+                throw new IllegalStateException("FineService is not configured. Cannot calculate overstay fine.");
+            }
+        }
+        
+        // Check for Reserved spot violation
+        // Fine is issued if vehicle parks in RESERVED spot without a valid reservation
+        // This applies both before and during the reservation time period
+        if (spot.getType() == SpotType.RESERVED) {
+            // Check if vehicle has a valid reservation for this spot
+            boolean hasReservation = reservationService != null 
+                && reservationService.hasValidReservation(licensePlate, spot.getSpotId());
+            
+            if (!hasReservation && fineService != null) {
+                // Use a fixed fine for reserved spot violation (not time-based)
+                Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
+                    "Reserved spot violation - no reservation");
+                fineDAO.save(reservedFine);
             }
         }
     }

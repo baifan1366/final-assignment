@@ -129,6 +129,11 @@ public class ReservationServiceImpl implements ReservationService {
     }
     
     @Override
+    public List<Reservation> getAllReservations() {
+        return reservationDAO.findAll();
+    }
+    
+    @Override
     public void processExpiredReservations() {
         List<Reservation> expired = reservationDAO.findExpiredPending();
         

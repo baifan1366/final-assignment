@@ -22,6 +22,7 @@ public class EntryExitPanel extends JPanel {
     private ParkingService parkingService;
     private PaymentService paymentService;
     private FineService fineService;
+    private com.university.parking.service.ReservationService reservationService;
     
     // Entry components
     private JPanel vehicleEntryPanel;
@@ -31,6 +32,7 @@ public class EntryExitPanel extends JPanel {
     private DefaultTableModel spotsTableModel;
     private StyledButton parkVehicleButton;
     private StyledButton refreshSpotsButton;
+    private JLabel reservationInfoLabel;
     
     // Exit components
     private JPanel vehicleExitPanel;
@@ -60,6 +62,17 @@ public class EntryExitPanel extends JPanel {
         this.parkingService = parkingService;
         this.paymentService = paymentService;
         this.fineService = fineService;
+        initializePanel();
+        initializeComponents();
+        layoutComponents();
+    }
+    
+    public EntryExitPanel(ParkingService parkingService, PaymentService paymentService, 
+                          FineService fineService, com.university.parking.service.ReservationService reservationService) {
+        this.parkingService = parkingService;
+        this.paymentService = paymentService;
+        this.fineService = fineService;
+        this.reservationService = reservationService;
         initializePanel();
         initializeComponents();
         layoutComponents();
@@ -97,6 +110,7 @@ public class EntryExitPanel extends JPanel {
         
         gbc.gridx = 1; gbc.weightx = 1;
         entryLicensePlateField = new StyledTextField("Enter license plate");
+        entryLicensePlateField.addActionListener(e -> checkReservations());
         inputPanel.add(entryLicensePlateField, gbc);
         
         // Vehicle type
@@ -112,8 +126,17 @@ public class EntryExitPanel extends JPanel {
         vehicleTypeComboBox.addActionListener(e -> refreshAvailableSpots());
         inputPanel.add(vehicleTypeComboBox, gbc);
         
-        // Refresh button
+        // Reservation info label
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, 0);
+        reservationInfoLabel = new JLabel("");
+        reservationInfoLabel.setFont(UIConstants.BODY);
+        reservationInfoLabel.setForeground(UIConstants.INFO);
+        reservationInfoLabel.setVisible(false);
+        inputPanel.add(reservationInfoLabel, gbc);
+        
+        // Refresh button
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         gbc.insets = new Insets(UIConstants.SPACING_SM, 0, 0, 0);
         refreshSpotsButton = new StyledButton("Refresh Available Spots", StyledButton.ButtonType.SECONDARY);
         refreshSpotsButton.addActionListener(e -> refreshAvailableSpots());
@@ -122,7 +145,7 @@ public class EntryExitPanel extends JPanel {
         content.add(inputPanel, BorderLayout.NORTH);
         
         // Table section
-        String[] columns = {"Spot ID", "Type", "Floor", "Rate (RM/hr)"};
+        String[] columns = {"Spot ID", "Type", "Floor", "Rate (RM/hr)", "Status"};
         spotsTableModel = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -320,22 +343,95 @@ public class EntryExitPanel extends JPanel {
             return;
         }
         
+        String licensePlate = entryLicensePlateField.getText().trim().toUpperCase();
+        
         try {
             List<ParkingSpot> availableSpots = parkingService.getAvailableSpots(selectedType);
+            
+            // Check for reservations
+            List<com.university.parking.domain.Reservation> userReservations = new java.util.ArrayList<>();
+            if (reservationService != null && !licensePlate.isEmpty()) {
+                userReservations = reservationService.findByLicensePlate(licensePlate).stream()
+                    .filter(r -> r.getStatus() == com.university.parking.domain.ReservationStatus.CONFIRMED)
+                    .filter(r -> r.isActive() || r.getStartTime().isAfter(java.time.LocalDateTime.now().minusMinutes(10)))
+                    .collect(java.util.stream.Collectors.toList());
+            }
+            
             if (availableSpots.isEmpty()) {
                 showWarning("No available spots for " + selectedType + " vehicles.");
             }
+            
             for (ParkingSpot spot : availableSpots) {
+                // Check if this spot is reserved by the user
+                boolean isUserReserved = userReservations.stream()
+                    .anyMatch(r -> r.getSpotId().equals(spot.getSpotId()));
+                
+                String status = isUserReserved ? "Your Reservation" : "Available";
+                
                 Object[] row = {
                     spot.getSpotId(),
                     spot.getType().toString(),
                     extractFloorFromSpotId(spot.getSpotId()),
-                    String.format("%.2f", spot.getHourlyRate())
+                    String.format("%.2f", spot.getHourlyRate()),
+                    status
                 };
                 spotsTableModel.addRow(row);
             }
+            
+            // Update reservation info label
+            if (!userReservations.isEmpty()) {
+                reservationInfoLabel.setText("✓ You have " + userReservations.size() + " active reservation(s)");
+                reservationInfoLabel.setVisible(true);
+                
+                // ENHANCEMENT: Auto-select and highlight the first reserved spot
+                SwingUtilities.invokeLater(() -> {
+                    for (int row = 0; row < spotsTableModel.getRowCount(); row++) {
+                        String status = (String) spotsTableModel.getValueAt(row, 4);
+                        if ("Your Reservation".equals(status)) {
+                            // Auto-select this row
+                            availableSpotsTable.setRowSelectionInterval(row, row);
+                            // Scroll to this row
+                            availableSpotsTable.scrollRectToVisible(
+                                availableSpotsTable.getCellRect(row, 0, true));
+                            break;
+                        }
+                    }
+                });
+            } else {
+                reservationInfoLabel.setVisible(false);
+            }
+            
         } catch (Exception e) {
             showError("Error loading available spots: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Checks for active reservations when license plate is entered.
+     */
+    private void checkReservations() {
+        String licensePlate = entryLicensePlateField.getText().trim().toUpperCase();
+        if (licensePlate.isEmpty() || reservationService == null) {
+            reservationInfoLabel.setVisible(false);
+            return;
+        }
+        
+        try {
+            List<com.university.parking.domain.Reservation> activeReservations = 
+                reservationService.findByLicensePlate(licensePlate).stream()
+                    .filter(r -> r.getStatus() == com.university.parking.domain.ReservationStatus.CONFIRMED)
+                    .filter(r -> r.isActive() || r.getStartTime().isAfter(java.time.LocalDateTime.now().minusMinutes(10)))
+                    .collect(java.util.stream.Collectors.toList());
+            
+            if (!activeReservations.isEmpty()) {
+                reservationInfoLabel.setText("✓ You have " + activeReservations.size() + " active reservation(s)");
+                reservationInfoLabel.setVisible(true);
+                refreshAvailableSpots();
+            } else {
+                reservationInfoLabel.setVisible(false);
+            }
+        } catch (Exception e) {
+            reservationInfoLabel.setVisible(false);
         }
     }
     
@@ -618,6 +714,10 @@ public class EntryExitPanel extends JPanel {
     
     public void setFineService(FineService fineService) {
         this.fineService = fineService;
+    }
+    
+    public void setReservationService(com.university.parking.service.ReservationService reservationService) {
+        this.reservationService = reservationService;
     }
     
     public ParkingService getParkingService() {
