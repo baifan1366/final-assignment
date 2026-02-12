@@ -134,8 +134,6 @@ public class ParkingServiceImpl implements ParkingService {
                 fineDAO.save(reservedFine);
             }
         }
-        // Note: RESERVED spots can be used by anyone, but non-reserved vehicles will be fined
-        // The fine will be issued during exit in checkAndIssueFines()
         
         // Create vehicle and set entry time (Requirements 3.5)
         LocalDateTime entryTime = LocalDateTime.now();
@@ -357,7 +355,7 @@ public class ParkingServiceImpl implements ParkingService {
     /**
      * Checks for fine conditions and issues fines if applicable.
      * This method is called during exit to check for any remaining violations.
-     * Note: Most fines are now issued at entry time (overstay on re-entry, reserved spot violation).
+     * Note: Reserved spot fines are issued at entry time to prevent double-charging.
      */
     private void checkAndIssueFines(Vehicle vehicle, ParkingSpot spot, String licensePlate) {
         LocalDateTime entryTime = vehicle.getEntryTime();
@@ -383,25 +381,10 @@ public class ParkingServiceImpl implements ParkingService {
                 Fine overstayFine = new Fine(licensePlate, fineAmount, 
                     "Overstay violation - exceeded 24 hours by " + overstayHours + " hours");
                 fineDAO.save(overstayFine);
-            } else {
-                throw new IllegalStateException("FineService is not configured. Cannot calculate overstay fine.");
             }
         }
         
-        // Check for Reserved spot violation
-        // Fine is issued if vehicle parks in RESERVED spot without a valid reservation
-        // This applies both before and during the reservation time period
-        if (spot.getType() == SpotType.RESERVED) {
-            // Check if vehicle has a valid reservation for this spot
-            boolean hasReservation = reservationService != null 
-                && reservationService.hasValidReservation(licensePlate, spot.getSpotId());
-            
-            if (!hasReservation && fineService != null) {
-                // Use a fixed fine for reserved spot violation (not time-based)
-                Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
-                    "Reserved spot violation - no reservation");
-                fineDAO.save(reservedFine);
-            }
-        }
+        // Note: Reserved spot fines are issued at entry time (in processEntry method)
+        // to prevent double-charging. We don't check again here.
     }
 }
