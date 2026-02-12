@@ -42,7 +42,6 @@ public class EntryExitPanel extends JPanel {
     private JLabel parkingFeeLabel;
     private JLabel finesLabel;
     private JLabel totalLabel;
-    private JCheckBox payFinesCheckBox;
     private StyledComboBox<PaymentMethod> paymentMethodComboBox;
     private StyledButton payExitButton;
     
@@ -248,16 +247,8 @@ public class EntryExitPanel extends JPanel {
         finesLabel.setForeground(UIConstants.DANGER);
         summaryPanel.add(finesLabel, gbc);
         
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, 0);
-        payFinesCheckBox = createStyledCheckBox("Pay fines now (Required)");
-        payFinesCheckBox.setSelected(true);
-        payFinesCheckBox.setEnabled(false); // Always disabled - fines are mandatory
-        summaryPanel.add(payFinesCheckBox, gbc);
-        
         // Separator
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(UIConstants.SPACING_MD, 0, UIConstants.SPACING_MD, 0);
         JSeparator sep = new JSeparator();
@@ -265,7 +256,7 @@ public class EntryExitPanel extends JPanel {
         summaryPanel.add(sep, gbc);
         
         // Total
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 1;
+        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 1;
         gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, UIConstants.SPACING_LG);
         JLabel totalText = createSummaryLabel("Total Amount");
         totalText.setFont(UIConstants.TITLE_SMALL);
@@ -277,7 +268,7 @@ public class EntryExitPanel extends JPanel {
         summaryPanel.add(totalLabel, gbc);
         
         // Payment method
-        gbc.gridx = 0; gbc.gridy = 6;
+        gbc.gridx = 0; gbc.gridy = 5;
         summaryPanel.add(createSummaryLabel("Payment Method"), gbc);
         gbc.gridx = 1; gbc.fill = GridBagConstraints.HORIZONTAL;
         paymentMethodComboBox = new StyledComboBox<>(PaymentMethod.values());
@@ -361,6 +352,10 @@ public class EntryExitPanel extends JPanel {
                 showWarning("No available spots for " + selectedType + " vehicles.");
             }
             
+            // Separate reserved and non-reserved spots
+            List<Object[]> reservedRows = new java.util.ArrayList<>();
+            List<Object[]> normalRows = new java.util.ArrayList<>();
+            
             for (ParkingSpot spot : availableSpots) {
                 // Check if this spot is reserved by the user
                 boolean isUserReserved = userReservations.stream()
@@ -375,6 +370,20 @@ public class EntryExitPanel extends JPanel {
                     String.format("%.2f", spot.getHourlyRate()),
                     status
                 };
+                
+                // Add to appropriate list
+                if (isUserReserved) {
+                    reservedRows.add(row);
+                } else {
+                    normalRows.add(row);
+                }
+            }
+            
+            // Add reserved spots first, then normal spots
+            for (Object[] row : reservedRows) {
+                spotsTableModel.addRow(row);
+            }
+            for (Object[] row : normalRows) {
                 spotsTableModel.addRow(row);
             }
             
@@ -383,20 +392,14 @@ public class EntryExitPanel extends JPanel {
                 reservationInfoLabel.setText("✓ You have " + userReservations.size() + " active reservation(s)");
                 reservationInfoLabel.setVisible(true);
                 
-                // ENHANCEMENT: Auto-select and highlight the first reserved spot
-                SwingUtilities.invokeLater(() -> {
-                    for (int row = 0; row < spotsTableModel.getRowCount(); row++) {
-                        String status = (String) spotsTableModel.getValueAt(row, 4);
-                        if ("Your Reservation".equals(status)) {
-                            // Auto-select this row
-                            availableSpotsTable.setRowSelectionInterval(row, row);
-                            // Scroll to this row
-                            availableSpotsTable.scrollRectToVisible(
-                                availableSpotsTable.getCellRect(row, 0, true));
-                            break;
-                        }
-                    }
-                });
+                // Auto-select and highlight the first reserved spot (which is now at the top)
+                if (!reservedRows.isEmpty()) {
+                    SwingUtilities.invokeLater(() -> {
+                        availableSpotsTable.setRowSelectionInterval(0, 0);
+                        availableSpotsTable.scrollRectToVisible(
+                            availableSpotsTable.getCellRect(0, 0, true));
+                    });
+                }
             } else {
                 reservationInfoLabel.setVisible(false);
             }
@@ -550,10 +553,6 @@ public class EntryExitPanel extends JPanel {
                 currentFineAmount = fineService.getTotalUnpaidAmount(licensePlate);
             }
             
-            // Fines are always required to be paid - checkbox is always checked and disabled
-            payFinesCheckBox.setSelected(true);
-            payFinesCheckBox.setEnabled(false);
-            
             hoursLabel.setText(hours + " hour(s)");
             parkingFeeLabel.setText(String.format("RM %.2f", currentParkingFee));
             finesLabel.setText(String.format("RM %.2f", currentFineAmount));
@@ -663,11 +662,6 @@ public class EntryExitPanel extends JPanel {
         currentExitSpot = null;
         currentParkingFee = 0.0;
         currentFineAmount = 0.0;
-
-        if (payFinesCheckBox != null) {
-            payFinesCheckBox.setSelected(true);
-            payFinesCheckBox.setEnabled(false);
-        }
 
         hoursLabel.setText("-");
         parkingFeeLabel.setText("RM 0.00");
