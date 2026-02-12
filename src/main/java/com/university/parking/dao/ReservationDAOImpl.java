@@ -49,6 +49,7 @@ public class ReservationDAOImpl implements ReservationDAO {
         
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setString(1, reservation.getReservationId());
             stmt.setString(2, reservation.getLicensePlate());
             stmt.setString(3, reservation.getSpotId());
@@ -57,7 +58,10 @@ public class ReservationDAOImpl implements ReservationDAO {
             stmt.setString(6, reservation.getEndTime().format(FORMATTER));
             stmt.setString(7, reservation.getStatus().name());
             stmt.executeUpdate();
+            
+            System.out.println("DEBUG: Reservation saved: " + reservation.getReservationId());
         } catch (SQLException e) {
+            System.err.println("DEBUG: Failed to save reservation: " + e.getMessage());
             throw new RuntimeException("Failed to save reservation", e);
         }
     }
@@ -103,14 +107,20 @@ public class ReservationDAOImpl implements ReservationDAO {
         
         try (Connection conn = dbManager.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
+            
             stmt.setString(1, reservation.getLicensePlate());
             stmt.setString(2, reservation.getSpotId());
             stmt.setString(3, reservation.getStartTime().format(FORMATTER));
             stmt.setString(4, reservation.getEndTime().format(FORMATTER));
             stmt.setString(5, reservation.getStatus().name());
             stmt.setString(6, reservation.getReservationId());
-            stmt.executeUpdate();
+            
+            int rowsAffected = stmt.executeUpdate();
+            
+            System.out.println("DEBUG: Reservation updated: " + reservation.getReservationId() + 
+                             " (rows affected: " + rowsAffected + ")");
         } catch (SQLException e) {
+            System.err.println("DEBUG: Failed to update reservation: " + e.getMessage());
             throw new RuntimeException("Failed to update reservation", e);
         }
     }
@@ -224,22 +234,17 @@ public class ReservationDAOImpl implements ReservationDAO {
     }
     
     private Reservation mapResultSet(ResultSet rs) throws SQLException {
+        String reservationId = rs.getString("reservation_id");
         String licensePlate = rs.getString("license_plate");
         String spotId = rs.getString("spot_id");
+        LocalDateTime reservationTime = LocalDateTime.parse(rs.getString("reservation_time"), FORMATTER);
         LocalDateTime startTime = LocalDateTime.parse(rs.getString("start_time"), FORMATTER);
         LocalDateTime endTime = LocalDateTime.parse(rs.getString("end_time"), FORMATTER);
-        
-        Reservation reservation = new Reservation(licensePlate, spotId, startTime, endTime);
-        
-        // Set status using reflection or by recreating with correct status
         String statusStr = rs.getString("status");
         ReservationStatus status = ReservationStatus.valueOf(statusStr);
-        if (status == ReservationStatus.CONFIRMED) {
-            reservation.confirm();
-        } else if (status == ReservationStatus.CANCELLED) {
-            reservation.cancel();
-        }
         
-        return reservation;
+        // Use constructor that preserves the original reservation ID from database
+        return new Reservation(reservationId, licensePlate, spotId, 
+                             reservationTime, startTime, endTime, status);
     }
 }

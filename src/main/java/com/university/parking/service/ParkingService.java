@@ -75,4 +75,11 @@ public interface ParkingService {
      * @return the parking spot if found, null otherwise
      */
     ParkingSpot findSpotByVehiclePlate(String licensePlate);
+    
+    /**
+     * Gets all parking spots in the system.
+     * 
+     * @return list of all parking spots
+     */
+    List<ParkingSpot> getAllSpots();
 }

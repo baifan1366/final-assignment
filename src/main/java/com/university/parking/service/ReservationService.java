@@ -101,6 +101,13 @@ public interface ReservationService {
     List<Reservation> getActiveReservations();
     
     /**
+     * Gets all reservations in the system.
+     * 
+     * @return list of all reservations
+     */
+    List<Reservation> getAllReservations();
+    
+    /**
      * Marks expired reservations and applies no-show fines if configured.
      * Should be called periodically by a scheduler.
      */

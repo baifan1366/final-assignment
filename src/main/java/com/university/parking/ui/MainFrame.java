@@ -24,10 +24,12 @@ public class MainFrame extends JFrame {
     private JPanel entryExitPanel;
     private JPanel adminPanel;
     private JPanel reportPanel;
+    private JPanel reservationPanel;
     
     private NavButton entryExitNav;
     private NavButton adminNav;
     private NavButton reportNav;
+    private NavButton reservationNav;
     private NavButton activeNav;
     
     private JLabel timeLabel;
@@ -65,10 +67,12 @@ public class MainFrame extends JFrame {
         entryExitPanel = createPlaceholderPanel("Entry/Exit Panel", "Manage vehicle entry and exit");
         adminPanel = createPlaceholderPanel("Admin Panel", "System administration");
         reportPanel = createPlaceholderPanel("Reports Panel", "View reports and statistics");
+        reservationPanel = createPlaceholderPanel("Reservation Panel", "Manage parking reservations");
         
         contentPanel.add(entryExitPanel, "entry");
         contentPanel.add(adminPanel, "admin");
         contentPanel.add(reportPanel, "reports");
+        contentPanel.add(reservationPanel, "reservations");
     }
 
     private JPanel createSidebar() {
@@ -118,16 +122,20 @@ public class MainFrame extends JFrame {
         entryExitNav = new NavButton("Entry / Exit");
         adminNav = new NavButton("Administration");
         reportNav = new NavButton("Reports");
+        reservationNav = new NavButton("Reservations");
         
         entryExitNav.addActionListener(e -> switchPanel("entry", entryExitNav));
         adminNav.addActionListener(e -> switchPanel("admin", adminNav));
         reportNav.addActionListener(e -> switchPanel("reports", reportNav));
+        reservationNav.addActionListener(e -> switchPanel("reservations", reservationNav));
         
         navPanel.add(entryExitNav);
         navPanel.add(Box.createVerticalStrut(UIConstants.SPACING_XS));
         navPanel.add(adminNav);
         navPanel.add(Box.createVerticalStrut(UIConstants.SPACING_XS));
         navPanel.add(reportNav);
+        navPanel.add(Box.createVerticalStrut(UIConstants.SPACING_XS));
+        navPanel.add(reservationNav);
         
         setActiveNav(entryExitNav);
         
@@ -218,7 +226,7 @@ public class MainFrame extends JFrame {
     
     private void switchPanel(String panelName, NavButton navButton) {
         // Check if admin authentication is required
-        if ("admin".equals(panelName) || "reports".equals(panelName)) {
+        if ("admin".equals(panelName) || "reports".equals(panelName) || "reservations".equals(panelName)) {
             if (!authenticateAdmin()) {
                 // Authentication failed - stay on current panel
                 return;
@@ -238,6 +246,9 @@ public class MainFrame extends JFrame {
                 break;
             case "reports":
                 title = "Reports";
+                break;
+            case "reservations":
+                title = "Reservations";
                 break;
         }
         
@@ -297,6 +308,12 @@ public class MainFrame extends JFrame {
         contentPanel.add(panel, "reports");
     }
     
+    public void setReservationPanel(JPanel panel) {
+        contentPanel.remove(reservationPanel);
+        this.reservationPanel = panel;
+        contentPanel.add(panel, "reservations");
+    }
+    
     public JPanel getEntryExitPanel() {
         return entryExitPanel;
     }
@@ -307,6 +324,10 @@ public class MainFrame extends JFrame {
     
     public JPanel getReportPanel() {
         return reportPanel;
+    }
+    
+    public JPanel getReservationPanel() {
+        return reservationPanel;
     }
     
     public JTabbedPane getTabbedPane() {

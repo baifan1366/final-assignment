@@ -51,6 +51,45 @@ public class Reservation {
     }
     
     /**
+     * Creates a reservation with a specific ID (used when loading from database).
+     * 
+     * @param reservationId the reservation ID
+     * @param licensePlate the vehicle's license plate
+     * @param spotId the reserved spot ID
+     * @param reservationTime when the reservation was created
+     * @param startTime when the reservation starts
+     * @param endTime when the reservation ends
+     * @param status the reservation status
+     */
+    public Reservation(String reservationId, String licensePlate, String spotId,
+                       LocalDateTime reservationTime, LocalDateTime startTime, 
+                       LocalDateTime endTime, ReservationStatus status) {
+        if (reservationId == null || reservationId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Reservation ID cannot be empty");
+        }
+        if (licensePlate == null || licensePlate.trim().isEmpty()) {
+            throw new IllegalArgumentException("License plate cannot be empty");
+        }
+        if (spotId == null || spotId.trim().isEmpty()) {
+            throw new IllegalArgumentException("Spot ID cannot be empty");
+        }
+        if (startTime == null || endTime == null) {
+            throw new IllegalArgumentException("Start and end time cannot be null");
+        }
+        if (endTime.isBefore(startTime)) {
+            throw new IllegalArgumentException("End time cannot be before start time");
+        }
+        
+        this.reservationId = reservationId;
+        this.licensePlate = licensePlate;
+        this.spotId = spotId;
+        this.reservationTime = reservationTime;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = status;
+    }
+    
+    /**
      * Generates a unique reservation ID.
      */
     private String generateReservationId() {

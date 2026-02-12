@@ -319,9 +319,9 @@ public class Application {
         // Create main frame
         MainFrame mainFrame = new MainFrame();
         
-        // Create and wire Entry/Exit panel
+        // Create and wire Entry/Exit panel with reservation service
         EntryExitPanel entryExitPanel = new EntryExitPanel(
-            parkingService, paymentService, fineService);
+            parkingService, paymentService, fineService, reservationService);
         mainFrame.setEntryExitPanel(entryExitPanel);
         
         // Create and wire Admin panel
@@ -331,6 +331,10 @@ public class Application {
         // Create and wire Report panel
         ReportPanel reportPanel = new ReportPanel(reportService);
         mainFrame.setReportPanel(reportPanel);
+        
+        // Create and wire Reservation panel (admin-only)
+        ReservationPanel reservationPanel = new ReservationPanel(reservationService, parkingService);
+        mainFrame.setReservationPanel(reservationPanel);
         
         // Add shutdown hook to close database connection
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
