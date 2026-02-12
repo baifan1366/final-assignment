@@ -40,6 +40,8 @@ public class UIConstants {
     public static final Color TABLE_HEADER = new Color(241, 243, 245);    // #F1F3F5 Table header
     public static final Color TABLE_ROW_ALT = new Color(248, 249, 250);   // #F8F9FA Alternate row
     public static final Color TABLE_HOVER = new Color(233, 236, 239);     // #E9ECEF Hover row
+    public static final Color TABLE_SELECTED = new Color(224, 242, 254);  // #E0F2FE Selected row (light blue)
+    public static final Color TABLE_SELECTED_TEXT = new Color(12, 74, 110); // #0C4A6E Selected text (dark blue)
     
     // ===== Font Family =====
     public static final String FONT_FAMILY = "Segoe UI";

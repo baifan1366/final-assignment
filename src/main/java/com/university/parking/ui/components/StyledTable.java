@@ -28,8 +28,8 @@ public class StyledTable extends JTable {
         setRowHeight(UIConstants.TABLE_ROW_HEIGHT);
         setShowGrid(false);
         setIntercellSpacing(new Dimension(0, 0));
-        setSelectionBackground(UIConstants.TABLE_HOVER);
-        setSelectionForeground(UIConstants.TEXT_PRIMARY);
+        setSelectionBackground(UIConstants.TABLE_SELECTED);
+        setSelectionForeground(UIConstants.TABLE_SELECTED_TEXT);
         setBackground(Color.WHITE);
         setFillsViewportHeight(true);
         
@@ -65,7 +65,7 @@ public class StyledTable extends JTable {
     }
     
     /**
-     * Custom cell renderer with zebra striping and hover effect.
+     * Custom cell renderer with zebra striping and enhanced selection effect.
      */
     private static class StyledCellRenderer extends DefaultTableCellRenderer {
         @Override
@@ -74,15 +74,26 @@ public class StyledTable extends JTable {
             super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             
             setFont(UIConstants.BODY);
-            setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
             
             if (isSelected) {
-                setBackground(UIConstants.TABLE_HOVER);
-                setForeground(UIConstants.TEXT_PRIMARY);
+                // Enhanced selection style with left border accent
+                setBackground(UIConstants.TABLE_SELECTED);
+                setForeground(UIConstants.TABLE_SELECTED_TEXT);
+                
+                // Add left border accent for first column
+                if (column == 0) {
+                    setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 3, 0, 0, UIConstants.PRIMARY),
+                        BorderFactory.createEmptyBorder(0, 9, 0, 12)
+                    ));
+                } else {
+                    setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
+                }
             } else {
-                // Zebra striping
+                // Zebra striping for non-selected rows
                 setBackground(row % 2 == 0 ? Color.WHITE : UIConstants.TABLE_ROW_ALT);
                 setForeground(UIConstants.TEXT_PRIMARY);
+                setBorder(BorderFactory.createEmptyBorder(0, 12, 0, 12));
             }
             
             return this;
