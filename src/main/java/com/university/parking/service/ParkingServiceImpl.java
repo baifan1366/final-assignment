@@ -78,9 +78,36 @@ public class ParkingServiceImpl implements ParkingService {
             throw new IllegalArgumentException("Spot must be selected");
         }
         
+        // Check if vehicle is already parked (indicates they left without proper exit)
         Vehicle activeVehicle = vehicleDAO.findActiveByLicensePlate(licensePlate);
         if (activeVehicle != null) {
-            throw new IllegalStateException("Vehicle is already parked: " + licensePlate);
+            // Vehicle is already parked - they are trying to park again without exiting properly
+            LocalDateTime entryTime = activeVehicle.getEntryTime();
+            if (entryTime != null) {
+                long totalHours = ChronoUnit.HOURS.between(entryTime, LocalDateTime.now());
+                
+                if (totalHours > OVERSTAY_THRESHOLD_HOURS) {
+                    // Issue overstay fine - they escaped without paying for previous parking
+                    int overstayHours = (int) (totalHours - OVERSTAY_THRESHOLD_HOURS);
+                    
+                    if (fineService != null) {
+                        double fineAmount = fineService.calculateFine(overstayHours);
+                        Fine overstayFine = new Fine(licensePlate, fineAmount, 
+                            "Overstay violation - vehicle escaped after parking for " + totalHours + 
+                            " hours, exceeded limit by " + overstayHours + " hours");
+                        fineDAO.save(overstayFine);
+                    }
+                }
+                
+                // Clean up the old parking record (they escaped, so mark as exited)
+                ParkingSpot oldSpot = parkingSpotDAO.findByVehiclePlate(licensePlate);
+                if (oldSpot != null) {
+                    oldSpot.releaseVehicle();
+                    parkingSpotDAO.update(oldSpot);
+                }
+                activeVehicle.setExitTime(LocalDateTime.now());
+                vehicleDAO.update(activeVehicle);
+            }
         }
         
         // Find and validate the spot (Requirements 3.4)
@@ -93,6 +120,19 @@ public class ParkingServiceImpl implements ParkingService {
         }
         if (!spot.canAccommodate(vehicleType)) {
             throw new IllegalStateException("Spot is not compatible with vehicle type: " + vehicleType);
+        }
+        
+        // Check for Reserved spot - issue fine but allow parking
+        if (spot.getType() == SpotType.RESERVED && vehicleType != VehicleType.HANDICAPPED) {
+            boolean hasReservation = reservationService != null 
+                && reservationService.hasValidReservation(licensePlate, spotId);
+            
+            if (!hasReservation && fineService != null) {
+                // Issue fine for parking without reservation, but allow them to park
+                Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
+                    "Reserved spot violation - parked without reservation");
+                fineDAO.save(reservedFine);
+            }
         }
         
         // Create vehicle and set entry time (Requirements 3.5)
@@ -144,24 +184,22 @@ public class ParkingServiceImpl implements ParkingService {
         // Calculate parking fee (Requirements 4.2, 4.3)
         double parkingFee = calculateParkingFee(vehicle, spot);
         
-        // Get unpaid fines (Requirements 4.4)
+        // Get unpaid fines (Requirements 4.4) - MUST pay all fines at exit
         double fineAmount = fineDAO.sumUnpaidByLicensePlate(licensePlate);
-        double fineAmountToPay = payFines ? fineAmount : 0.0;
         
-        // Calculate total amount
-        double totalAmount = parkingFee + fineAmountToPay;
+        // Calculate total amount - always include fines (no choice to skip)
+        double totalAmount = parkingFee + fineAmount;
         
-        // Process payment
+        // Process payment - always pay parking fee + all fines
         Ticket ticket = ticketDAO.findByLicensePlate(licensePlate);
         String ticketId = ticket != null ? ticket.getTicketId() : null;
         Payment payment = new Payment(totalAmount, paymentMethod, licensePlate, ticketId);
         paymentDAO.save(payment);
         
-        if (payFines) {
-            List<Fine> unpaidFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
-            for (Fine fine : unpaidFines) {
-                fineDAO.markAsPaid(fine.getFineId());
-            }
+        // Mark all fines as paid
+        List<Fine> unpaidFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
+        for (Fine fine : unpaidFines) {
+            fineDAO.markAsPaid(fine.getFineId());
         }
         
         // Release the spot (Requirements 4.6)
@@ -185,10 +223,10 @@ public class ParkingServiceImpl implements ParkingService {
             hourlyRate = spot.getHourlyRate();
         }
         
-        // Generate receipt (Requirements 4.7, 6.4)
+        // Generate receipt (Requirements 4.7, 6.4) - always show fines paid
         String receiptId = "R-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         return new Receipt(receiptId, licensePlate, entryTime, exitTime, 
-                          durationHours, hourlyRate, parkingFee, fineAmountToPay, paymentMethod);
+                          durationHours, hourlyRate, parkingFee, fineAmount, paymentMethod);
     }
     
     @Override
@@ -286,9 +324,8 @@ public class ParkingServiceImpl implements ParkingService {
     
     /**
      * Checks for fine conditions and issues fines if applicable.
-     * Fine conditions:
-     * 1. Vehicle stays more than 24 hours (overstay)
-     * 2. Vehicle parks in Reserved spot without reservation
+     * This method is called during exit to check for any remaining violations.
+     * Note: Most fines are now issued at entry time (overstay on re-entry, reserved spot violation).
      */
     private void checkAndIssueFines(Vehicle vehicle, ParkingSpot spot, String licensePlate) {
         LocalDateTime entryTime = vehicle.getEntryTime();
@@ -300,35 +337,20 @@ public class ParkingServiceImpl implements ParkingService {
         
         long totalHours = ChronoUnit.HOURS.between(entryTime, exitTime);
         
-        // Check for overstay (more than 24 hours)
+        // Check for overstay at exit (more than 24 hours) - backup check
+        // Primary overstay fine is issued when attempting to re-park
         if (totalHours > OVERSTAY_THRESHOLD_HOURS) {
-            int overstayHours = (int) (totalHours - OVERSTAY_THRESHOLD_HOURS);
+            // Check if fine was already issued for this vehicle
+            List<Fine> existingFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
+            boolean alreadyFined = existingFines.stream()
+                .anyMatch(f -> f.getReason().contains("Overstay violation"));
             
-            // Use FineService to calculate fine amount
-            if (fineService != null) {
+            if (!alreadyFined && fineService != null) {
+                int overstayHours = (int) (totalHours - OVERSTAY_THRESHOLD_HOURS);
                 double fineAmount = fineService.calculateFine(overstayHours);
                 Fine overstayFine = new Fine(licensePlate, fineAmount, 
                     "Overstay violation - exceeded 24 hours by " + overstayHours + " hours");
                 fineDAO.save(overstayFine);
-            } else {
-                throw new IllegalStateException("FineService is not configured. Cannot calculate overstay fine.");
-            }
-        }
-        
-        // Check for Reserved spot violation (non-VIP parking in Reserved without valid reservation)
-        if (spot.getType() == SpotType.RESERVED) {
-            // Non-handicapped vehicles in Reserved spots without reservation get fined
-            if (vehicle.getVehicleType() != VehicleType.HANDICAPPED) {
-                // Check if vehicle has a valid reservation for this spot
-                boolean hasReservation = reservationService != null 
-                    && reservationService.hasValidReservation(licensePlate, spot.getSpotId());
-                
-                if (!hasReservation && fineService != null) {
-                    // Use a fixed fine for reserved spot violation (not time-based)
-                    Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
-                        "Reserved spot violation - no reservation");
-                    fineDAO.save(reservedFine);
-                }
             }
         }
     }

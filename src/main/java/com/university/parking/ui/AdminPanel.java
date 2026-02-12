@@ -146,7 +146,7 @@ public class AdminPanel extends JPanel {
         // Radio buttons
         fixedRadio = createStyledRadio("Fixed Fine", "Flat RM50 fine for overstaying");
         progressiveRadio = createStyledRadio("Progressive Fine", "RM50 + RM100 + RM150 + RM200 by tier");
-        hourlyRadio = createStyledRadio("Hourly Fine", "RM20 per hour of overstay, max RM500");
+        hourlyRadio = createStyledRadio("Hourly Fine", "RM20 per hour of overstay");
         
         fineSchemeGroup = new ButtonGroup();
         fineSchemeGroup.add(fixedRadio);
@@ -314,8 +314,8 @@ public class AdminPanel extends JPanel {
             newStrategy = new ProgressiveFineStrategy();
             strategyName = "Progressive";
         } else if (hourlyRadio.isSelected()) {
-            // Hourly: RM20/hour, max RM500
-            newStrategy = new HourlyFineStrategy(20.0, 500.0);
+            // Hourly: RM20/hour (no max cap as per PDF requirement)
+            newStrategy = new HourlyFineStrategy();
             strategyName = "Hourly";
         } else {
             showWarning("Please select a fine scheme.");

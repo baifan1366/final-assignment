@@ -228,10 +228,9 @@ public class EntryExitPanel extends JPanel {
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, 0);
-        payFinesCheckBox = createStyledCheckBox("Pay fines now");
+        payFinesCheckBox = createStyledCheckBox("Pay fines now (Required)");
         payFinesCheckBox.setSelected(true);
-        payFinesCheckBox.setEnabled(false);
-        payFinesCheckBox.addActionListener(e -> updateExitTotals());
+        payFinesCheckBox.setEnabled(false); // Always disabled - fines are mandatory
         summaryPanel.add(payFinesCheckBox, gbc);
         
         // Separator
@@ -304,8 +303,8 @@ public class EntryExitPanel extends JPanel {
     }
     
     private void updateExitTotals() {
-        double fineToPay = payFinesCheckBox != null && payFinesCheckBox.isSelected() ? currentFineAmount : 0.0;
-        totalLabel.setText(String.format("RM %.2f", currentParkingFee + fineToPay));
+        // Fines are always included - no choice
+        totalLabel.setText(String.format("RM %.2f", currentParkingFee + currentFineAmount));
     }
 
     private void refreshAvailableSpots() {
@@ -455,8 +454,9 @@ public class EntryExitPanel extends JPanel {
                 currentFineAmount = fineService.getTotalUnpaidAmount(licensePlate);
             }
             
-            payFinesCheckBox.setEnabled(currentFineAmount > 0);
-            payFinesCheckBox.setSelected(currentFineAmount > 0);
+            // Fines are always required to be paid - checkbox is always checked and disabled
+            payFinesCheckBox.setSelected(true);
+            payFinesCheckBox.setEnabled(false);
             
             hoursLabel.setText(hours + " hour(s)");
             parkingFeeLabel.setText(String.format("RM %.2f", currentParkingFee));
@@ -488,11 +488,11 @@ public class EntryExitPanel extends JPanel {
             return;
         }
         
-        boolean payFines = payFinesCheckBox != null && payFinesCheckBox.isSelected();
+        boolean payFines = true; // Always pay fines - no choice
         
         // Show card payment dialog if CARD is selected
         if (paymentMethod == PaymentMethod.CARD) {
-            double totalAmount = currentParkingFee + (payFines ? currentFineAmount : 0.0);
+            double totalAmount = currentParkingFee + currentFineAmount; // Always include fines
             CardPaymentDialog cardDialog = new CardPaymentDialog(
                 (Frame) SwingUtilities.getWindowAncestor(this), 
                 totalAmount
