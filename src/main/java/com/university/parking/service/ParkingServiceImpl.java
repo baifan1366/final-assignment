@@ -284,6 +284,36 @@ public class ParkingServiceImpl implements ParkingService {
         
         return hours * hourlyRate;
     }
+
+    @Override
+    public double calculateExitFinePreview(String licensePlate, Vehicle vehicle) {
+        if (licensePlate == null || licensePlate.trim().isEmpty()) {
+            return 0.0;
+        }
+
+        List<Fine> unpaidFines = fineDAO.findUnpaidByLicensePlate(licensePlate);
+        double unpaidAmount = unpaidFines.stream()
+                .mapToDouble(Fine::getAmount)
+                .sum();
+
+        double additionalFine = 0.0;
+        if (vehicle != null && vehicle.getEntryTime() != null && fineService != null) {
+            LocalDateTime exitTime = LocalDateTime.now();
+            long totalHours = ChronoUnit.HOURS.between(vehicle.getEntryTime(), exitTime);
+            if (totalHours > OVERSTAY_THRESHOLD_HOURS) {
+                boolean alreadyFined = unpaidFines.stream()
+                        .anyMatch(f -> f.getReason() != null && f.getReason().contains("Overstay violation"));
+                if (!alreadyFined) {
+                    int overstayHours = (int) (totalHours - OVERSTAY_THRESHOLD_HOURS);
+                    if (overstayHours > 0) {
+                        additionalFine = fineService.calculateFine(overstayHours);
+                    }
+                }
+            }
+        }
+
+        return unpaidAmount + additionalFine;
+    }
     
     @Override
     public ParkingLot getParkingLotStatus() {

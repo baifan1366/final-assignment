@@ -52,6 +52,8 @@ public interface ParkingService {
      * @return the calculated parking fee
      */
     double calculateParkingFee(Vehicle vehicle, ParkingSpot spot);
+
+    double calculateExitFinePreview(String licensePlate, Vehicle vehicle);
     
     /**
      * Gets the current parking lot status.

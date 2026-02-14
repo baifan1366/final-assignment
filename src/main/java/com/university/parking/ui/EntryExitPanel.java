@@ -241,7 +241,7 @@ public class EntryExitPanel extends JPanel {
         
         // Fines
         gbc.gridx = 0; gbc.gridy = 2;
-        summaryPanel.add(createSummaryLabel("Unpaid Fines"), gbc);
+        summaryPanel.add(createSummaryLabel("Fines"), gbc);
         gbc.gridx = 1;
         finesLabel = createValueLabel("RM 0.00");
         finesLabel.setForeground(UIConstants.DANGER);
@@ -548,10 +548,7 @@ public class EntryExitPanel extends JPanel {
             currentParkingFee = parkingService.calculateParkingFee(currentExitVehicle, currentExitSpot);
             currentExitVehicle.setExitTime(null);
             
-            currentFineAmount = 0.0;
-            if (fineService != null) {
-                currentFineAmount = fineService.getTotalUnpaidAmount(licensePlate);
-            }
+            currentFineAmount = parkingService.calculateExitFinePreview(licensePlate, currentExitVehicle);
             
             hoursLabel.setText(hours + " hour(s)");
             parkingFeeLabel.setText(String.format("RM %.2f", currentParkingFee));
