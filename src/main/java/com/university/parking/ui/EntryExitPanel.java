@@ -602,35 +602,37 @@ public class EntryExitPanel extends JPanel {
             
             // Build detailed receipt message
             StringBuilder message = new StringBuilder();
-            message.append("Payment Successful!\n\n");
-            message.append("═══════════════════════════════\n");
-            message.append("         PARKING RECEIPT\n");
-            message.append("═══════════════════════════════\n\n");
-            message.append(String.format("Receipt ID: %s\n", receipt.getReceiptId()));
-            message.append(String.format("License Plate: %s\n\n", receipt.getLicensePlate()));
+            message.append("<html><div style='text-align: center;'>");
+            message.append("Payment Successful!<br><br>");
+            message.append("═══════════════════════════════<br>");
+            message.append("PARKING RECEIPT<br>");
+            message.append("═══════════════════════════════<br><br>");
+            message.append(String.format("Receipt ID: %s<br>", receipt.getReceiptId()));
+            message.append(String.format("License Plate: %s<br><br>", receipt.getLicensePlate()));
             
             // Time details
             if (receipt.getEntryTime() != null) {
-                message.append(String.format("Entry Time: %s\n", 
+                message.append(String.format("Entry Time: %s<br>", 
                     receipt.getEntryTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
             }
-            message.append(String.format("Exit Time: %s\n", 
+            message.append(String.format("Exit Time: %s<br>", 
                 receipt.getTimestamp().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-            message.append(String.format("Duration: %d hour(s)\n\n", receipt.getDurationHours()));
+            message.append(String.format("Duration: %d hour(s)<br><br>", receipt.getDurationHours()));
             
             // Fee breakdown
-            message.append("───────────────────────────────\n");
-            message.append("Fee Breakdown:\n");
-            message.append(String.format("  %s\n", receipt.getFeeBreakdown()));
-            message.append(String.format("  Parking Fee: RM %.2f\n", receipt.getParkingFee()));
+            message.append("───────────────────────────────<br>");
+            message.append("Fee Breakdown:<br>");
+            message.append(String.format("%s<br>", receipt.getFeeBreakdown()));
+            message.append(String.format("Parking Fee: RM %.2f<br>", receipt.getParkingFee()));
             if (receipt.getFineAmount() > 0) {
-                message.append(String.format("  Fines: RM %.2f\n", receipt.getFineAmount()));
+                message.append(String.format("Fines: RM %.2f<br>", receipt.getFineAmount()));
             }
-            message.append("───────────────────────────────\n");
-            message.append(String.format("Total Paid: RM %.2f\n", receipt.getTotalAmount()));
-            message.append(String.format("Payment Method: %s\n", receipt.getPaymentMethod()));
-            message.append("\n═══════════════════════════════\n");
-            message.append("      Thank you for parking!\n");
+            message.append("───────────────────────────────<br>");
+            message.append(String.format("Total Paid: RM %.2f<br>", receipt.getTotalAmount()));
+            message.append(String.format("Payment Method: %s<br>", receipt.getPaymentMethod()));
+            message.append("<br>═══════════════════════════════<br>");
+            message.append("Thank you for parking!<br>");
+            message.append("</div></html>");
             
             showSuccess("Exit Successful", message.toString());
             clearExitInputs();

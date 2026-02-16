@@ -86,8 +86,11 @@ public class ParkingServiceImpl implements ParkingService {
             if (entryTime != null) {
                 long totalHours = ChronoUnit.HOURS.between(entryTime, LocalDateTime.now());
                 
-                if (totalHours > OVERSTAY_THRESHOLD_HOURS) {
-                    // Issue overstay fine - they escaped without paying for previous parking
+                if (totalHours <= OVERSTAY_THRESHOLD_HOURS) {
+                    // Vehicle is still within 24 hours - must exit first
+                    throw new IllegalStateException("Vehicle " + licensePlate + " is already parked. Please complete the exit process before parking again.");
+                } else {
+                    // Over 24 hours - issue overstay fine and clean up old parking record
                     int overstayHours = (int) (totalHours - OVERSTAY_THRESHOLD_HOURS);
                     
                     if (fineService != null) {
@@ -97,16 +100,16 @@ public class ParkingServiceImpl implements ParkingService {
                             " hours, exceeded limit by " + overstayHours + " hours");
                         fineDAO.save(overstayFine);
                     }
+                    
+                    // Clean up the old parking record (they escaped, so mark as exited)
+                    ParkingSpot oldSpot = parkingSpotDAO.findByVehiclePlate(licensePlate);
+                    if (oldSpot != null) {
+                        oldSpot.releaseVehicle();
+                        parkingSpotDAO.update(oldSpot);
+                    }
+                    activeVehicle.setExitTime(LocalDateTime.now());
+                    vehicleDAO.update(activeVehicle);
                 }
-                
-                // Clean up the old parking record (they escaped, so mark as exited)
-                ParkingSpot oldSpot = parkingSpotDAO.findByVehiclePlate(licensePlate);
-                if (oldSpot != null) {
-                    oldSpot.releaseVehicle();
-                    parkingSpotDAO.update(oldSpot);
-                }
-                activeVehicle.setExitTime(LocalDateTime.now());
-                vehicleDAO.update(activeVehicle);
             }
         }
         
