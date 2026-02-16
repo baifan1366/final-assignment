@@ -34,6 +34,13 @@ public class EntryExitPanel extends JPanel {
     private StyledButton refreshSpotsButton;
     private JLabel reservationInfoLabel;
     
+    // Filter components
+    private StyledComboBox<String> floorFilterComboBox;
+    private StyledComboBox<String> typeFilterComboBox;
+    private StyledComboBox<String> statusFilterComboBox;
+    private StyledTextField spotIdSearchField;
+    private List<Object[]> allSpotsData;
+    
     // Exit components
     private JPanel vehicleExitPanel;
     private StyledTextField exitLicensePlateField;
@@ -78,26 +85,27 @@ public class EntryExitPanel extends JPanel {
     }
     
     private void initializePanel() {
-        setLayout(new GridLayout(1, 2, UIConstants.SPACING_LG, 0));
+        setLayout(new BorderLayout());
         setBackground(UIConstants.BG_MAIN);
         setOpaque(false);
     }
     
     private void initializeComponents() {
+        allSpotsData = new java.util.ArrayList<>();
         vehicleEntryPanel = createVehicleEntryPanel();
         vehicleExitPanel = createVehicleExitPanel();
     }
 
     private JPanel createVehicleEntryPanel() {
         CardPanel card = new CardPanel("Vehicle Entry");
-        card.setContentLayout(new BorderLayout(0, UIConstants.SPACING_MD));
+        card.setContentLayout(new BorderLayout(0, UIConstants.SPACING_SM));
         JPanel content = card.getContentPanel();
         
-        // Input section
+        // Input section - more compact
         JPanel inputPanel = new JPanel(new GridBagLayout());
         inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, UIConstants.SPACING_MD, UIConstants.SPACING_MD);
+        gbc.insets = new Insets(0, 0, UIConstants.SPACING_SM, UIConstants.SPACING_MD);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         
         // License plate
@@ -127,7 +135,7 @@ public class EntryExitPanel extends JPanel {
         
         // Reservation info label
         gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
-        gbc.insets = new Insets(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, 0);
+        gbc.insets = new Insets(0, 0, UIConstants.SPACING_SM, 0);
         reservationInfoLabel = new JLabel("");
         reservationInfoLabel.setFont(UIConstants.BODY);
         reservationInfoLabel.setForeground(UIConstants.INFO);
@@ -136,14 +144,98 @@ public class EntryExitPanel extends JPanel {
         
         // Refresh button
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
-        gbc.insets = new Insets(UIConstants.SPACING_SM, 0, 0, 0);
+        gbc.insets = new Insets(0, 0, UIConstants.SPACING_SM, 0);
         refreshSpotsButton = new StyledButton("Refresh Available Spots", StyledButton.ButtonType.SECONDARY);
         refreshSpotsButton.addActionListener(e -> refreshAvailableSpots());
         inputPanel.add(refreshSpotsButton, gbc);
         
         content.add(inputPanel, BorderLayout.NORTH);
         
-        // Table section
+        // Filter section - more compact
+        JPanel filterPanel = new JPanel(new GridBagLayout());
+        filterPanel.setOpaque(false);
+        filterPanel.setBorder(BorderFactory.createEmptyBorder(UIConstants.SPACING_SM, 0, UIConstants.SPACING_SM, 0));
+        GridBagConstraints filterGbc = new GridBagConstraints();
+        filterGbc.insets = new Insets(0, 0, 0, UIConstants.SPACING_SM);
+        filterGbc.fill = GridBagConstraints.HORIZONTAL;
+        filterGbc.gridy = 0;
+        
+        // Floor filter
+        filterGbc.gridx = 0; filterGbc.weightx = 0;
+        filterGbc.ipadx = 10;
+        JLabel floorLabel = new JLabel("Floor:");
+        floorLabel.setFont(UIConstants.BODY);
+        floorLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        filterPanel.add(floorLabel, filterGbc);
+        
+        filterGbc.gridx = 1; filterGbc.weightx = 0.25; filterGbc.ipadx = 0;
+        floorFilterComboBox = new StyledComboBox<>(new String[]{"All", "F1", "F2", "F3"});
+        floorFilterComboBox.setPreferredSize(new Dimension(80, floorFilterComboBox.getPreferredSize().height));
+        floorFilterComboBox.addActionListener(e -> applyFilters());
+        filterPanel.add(floorFilterComboBox, filterGbc);
+        
+        // Type filter
+        filterGbc.gridx = 2; filterGbc.weightx = 0;
+        filterGbc.ipadx = 10;
+        JLabel typeFilterLabel = new JLabel("Type:");
+        typeFilterLabel.setFont(UIConstants.BODY);
+        typeFilterLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        filterPanel.add(typeFilterLabel, filterGbc);
+        
+        filterGbc.gridx = 3; filterGbc.weightx = 0.25; filterGbc.ipadx = 0;
+        typeFilterComboBox = new StyledComboBox<>(new String[]{"All", "COMPACT", "REGULAR", "LARGE", "HANDICAPPED"});
+        typeFilterComboBox.setPreferredSize(new Dimension(100, typeFilterComboBox.getPreferredSize().height));
+        typeFilterComboBox.addActionListener(e -> applyFilters());
+        filterPanel.add(typeFilterComboBox, filterGbc);
+        
+        // Status filter
+        filterGbc.gridx = 4; filterGbc.weightx = 0;
+        filterGbc.ipadx = 10;
+        JLabel statusLabel = new JLabel("Status:");
+        statusLabel.setFont(UIConstants.BODY);
+        statusLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        filterPanel.add(statusLabel, filterGbc);
+        
+        filterGbc.gridx = 5; filterGbc.weightx = 0.25;
+        filterGbc.ipadx = 0;
+        statusFilterComboBox = new StyledComboBox<>(new String[]{"All", "Available", "Your Reservation"});
+        statusFilterComboBox.setPreferredSize(new Dimension(120, statusFilterComboBox.getPreferredSize().height));
+        statusFilterComboBox.addActionListener(e -> applyFilters());
+        filterPanel.add(statusFilterComboBox, filterGbc);
+        
+        // Search by Spot ID
+        filterGbc.gridx = 6; filterGbc.weightx = 0;
+        filterGbc.ipadx = 10;
+        filterGbc.insets = new Insets(0, UIConstants.SPACING_MD, 0, UIConstants.SPACING_SM);
+        JLabel searchLabel = new JLabel("Search:");
+        searchLabel.setFont(UIConstants.BODY);
+        searchLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        filterPanel.add(searchLabel, filterGbc);
+        
+        filterGbc.gridx = 7; filterGbc.weightx = 0.25;
+        filterGbc.insets = new Insets(0, 0, 0, 0);
+        filterGbc.ipadx = 0;
+        spotIdSearchField = new StyledTextField("Spot ID");
+        spotIdSearchField.setPreferredSize(new Dimension(100, spotIdSearchField.getPreferredSize().height));
+        spotIdSearchField.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent e) {
+                applyFilters();
+            }
+        });
+        filterPanel.add(spotIdSearchField, filterGbc);
+        
+        // Create a wrapper panel for filter
+        JPanel filterWrapper = new JPanel(new BorderLayout());
+        filterWrapper.setOpaque(false);
+        filterWrapper.add(filterPanel, BorderLayout.CENTER);
+        
+        // Create center panel to hold filter and table
+        JPanel centerPanel = new JPanel(new BorderLayout());
+        centerPanel.setOpaque(false);
+        centerPanel.add(filterWrapper, BorderLayout.NORTH);
+        
+        // Table section - increased height
         String[] columns = {"Spot ID", "Type", "Floor", "Rate (RM/hr)", "Status"};
         spotsTableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -155,7 +247,7 @@ public class EntryExitPanel extends JPanel {
         availableSpotsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         
         JScrollPane scrollPane = availableSpotsTable.createScrollPane();
-        scrollPane.setPreferredSize(new Dimension(0, 250));
+        scrollPane.setPreferredSize(new Dimension(0, 300)); // Increased from 250
         
         JPanel tableWrapper = new JPanel(new BorderLayout());
         tableWrapper.setOpaque(false);
@@ -166,12 +258,13 @@ public class EntryExitPanel extends JPanel {
         tableWrapper.add(tableTitle, BorderLayout.NORTH);
         tableWrapper.add(scrollPane, BorderLayout.CENTER);
         
-        content.add(tableWrapper, BorderLayout.CENTER);
+        centerPanel.add(tableWrapper, BorderLayout.CENTER);
+        content.add(centerPanel, BorderLayout.CENTER);
         
         // Park button
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.setOpaque(false);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(UIConstants.SPACING_MD, 0, 0, 0));
+        buttonPanel.setBorder(BorderFactory.createEmptyBorder(UIConstants.SPACING_SM, 0, 0, 0));
         parkVehicleButton = new StyledButton("Park Vehicle", StyledButton.ButtonType.SUCCESS);
         parkVehicleButton.setPreferredSize(new Dimension(180, UIConstants.BUTTON_HEIGHT));
         parkVehicleButton.addActionListener(e -> handleParkVehicle());
@@ -323,6 +416,8 @@ public class EntryExitPanel extends JPanel {
 
     private void refreshAvailableSpots() {
         spotsTableModel.setRowCount(0);
+        allSpotsData.clear();
+        
         if (parkingService == null) {
             showError("Parking service is not available.");
             return;
@@ -379,33 +474,90 @@ public class EntryExitPanel extends JPanel {
                 }
             }
             
-            // Add reserved spots first, then normal spots
-            for (Object[] row : reservedRows) {
-                spotsTableModel.addRow(row);
-            }
-            for (Object[] row : normalRows) {
-                spotsTableModel.addRow(row);
-            }
+            // Store all data (reserved first, then normal)
+            allSpotsData.addAll(reservedRows);
+            allSpotsData.addAll(normalRows);
             
             // Update reservation info label
             if (!userReservations.isEmpty()) {
                 reservationInfoLabel.setText("✓ You have " + userReservations.size() + " active reservation(s)");
                 reservationInfoLabel.setVisible(true);
-                
-                // Auto-select and highlight the first reserved spot (which is now at the top)
-                if (!reservedRows.isEmpty()) {
-                    SwingUtilities.invokeLater(() -> {
-                        availableSpotsTable.setRowSelectionInterval(0, 0);
-                        availableSpotsTable.scrollRectToVisible(
-                            availableSpotsTable.getCellRect(0, 0, true));
-                    });
-                }
             } else {
                 reservationInfoLabel.setVisible(false);
             }
             
+            // Apply filters to display data
+            applyFilters();
+            
         } catch (Exception e) {
             showError("Error loading available spots: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Apply filters to the available spots table.
+     */
+    private void applyFilters() {
+        spotsTableModel.setRowCount(0);
+        
+        String floorFilter = (String) floorFilterComboBox.getSelectedItem();
+        String typeFilter = (String) typeFilterComboBox.getSelectedItem();
+        String statusFilter = (String) statusFilterComboBox.getSelectedItem();
+        String spotIdSearch = spotIdSearchField.getText().trim().toUpperCase();
+        
+        int firstReservedRow = -1;
+        int rowIndex = 0;
+        
+        for (Object[] row : allSpotsData) {
+            boolean matches = true;
+            
+            // Apply floor filter
+            if (floorFilter != null && !floorFilter.equals("All")) {
+                if (!row[2].equals(floorFilter)) {
+                    matches = false;
+                }
+            }
+            
+            // Apply type filter
+            if (typeFilter != null && !typeFilter.equals("All")) {
+                if (!row[1].equals(typeFilter)) {
+                    matches = false;
+                }
+            }
+            
+            // Apply status filter
+            if (statusFilter != null && !statusFilter.equals("All")) {
+                if (!row[4].equals(statusFilter)) {
+                    matches = false;
+                }
+            }
+            
+            // Apply spot ID search
+            if (!spotIdSearch.isEmpty() && !spotIdSearch.equals("SPOT ID")) {
+                String spotId = ((String) row[0]).toUpperCase();
+                if (!spotId.contains(spotIdSearch)) {
+                    matches = false;
+                }
+            }
+            
+            if (matches) {
+                spotsTableModel.addRow(row);
+                // Track first reserved row
+                if (firstReservedRow == -1 && row[4].equals("Your Reservation")) {
+                    firstReservedRow = rowIndex;
+                }
+                rowIndex++;
+            }
+        }
+        
+        // Auto-select the first reserved spot if exists
+        if (firstReservedRow >= 0) {
+            final int selectRow = firstReservedRow;
+            SwingUtilities.invokeLater(() -> {
+                availableSpotsTable.setRowSelectionInterval(selectRow, selectRow);
+                availableSpotsTable.scrollRectToVisible(
+                    availableSpotsTable.getCellRect(selectRow, 0, true));
+            });
         }
     }
     
@@ -649,6 +801,11 @@ public class EntryExitPanel extends JPanel {
         entryLicensePlateField.setText("");
         vehicleTypeComboBox.setSelectedIndex(-1);
         spotsTableModel.setRowCount(0);
+        allSpotsData.clear();
+        floorFilterComboBox.setSelectedIndex(0);
+        typeFilterComboBox.setSelectedIndex(0);
+        statusFilterComboBox.setSelectedIndex(0);
+        spotIdSearchField.setText("");
     }
     
     private void clearExitInputs() {
@@ -670,8 +827,16 @@ public class EntryExitPanel extends JPanel {
     }
     
     private void layoutComponents() {
-        add(vehicleEntryPanel);
-        add(vehicleExitPanel);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, vehicleEntryPanel, vehicleExitPanel);
+        splitPane.setResizeWeight(0.5); // Equal initial split
+        splitPane.setDividerSize(8); // Divider width
+        splitPane.setDividerLocation(0.5); // Start at 50%
+        splitPane.setContinuousLayout(true); // Smooth resizing
+        splitPane.setOneTouchExpandable(false); // No expand/collapse buttons
+        splitPane.setBorder(null);
+        splitPane.setOpaque(false);
+        
+        add(splitPane, BorderLayout.CENTER);
     }
     
     // Dialog helpers
