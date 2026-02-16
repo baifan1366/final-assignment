@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 public class ParkingServiceImpl implements ParkingService {
     
     private static final int OVERSTAY_THRESHOLD_HOURS = 24;
-    private static final double RESERVED_SPOT_VIOLATION_FINE = 100.0;
     
     private final ParkingSpotDAO parkingSpotDAO;
     private final VehicleDAO vehicleDAO;
@@ -131,8 +130,10 @@ public class ParkingServiceImpl implements ParkingService {
                 && reservationService.hasValidReservation(licensePlate, spotId);
             
             if (!hasReservation && fineService != null) {
-                // Issue fine for parking without reservation, but allow them to park
-                Fine reservedFine = new Fine(licensePlate, RESERVED_SPOT_VIOLATION_FINE, 
+                // Issue fine for parking without reservation, using current fine scheme
+                // Use 1 hour as base for calculating the fine amount
+                double fineAmount = fineService.calculateFine(1);
+                Fine reservedFine = new Fine(licensePlate, fineAmount, 
                     "Reserved spot violation - parked without reservation");
                 fineDAO.save(reservedFine);
             }
